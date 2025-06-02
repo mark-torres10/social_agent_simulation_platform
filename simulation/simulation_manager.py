@@ -1,7 +1,7 @@
 from config.models import SimulationConfig
-
 from memory.memory_manager import GlobalMemoryManager
 from simulation.constants import DEFAULT_NUM_ROUNDS
+from agent.agent_manager import AgentManager
 
 
 class SimulationManager:
@@ -11,7 +11,13 @@ class SimulationManager:
         self.config = config
 
     def init_agents(self):
-        self.agents = []
+        num_agents = getattr(self.config, "num_agents", 10)
+        traits_list = getattr(self.config, "traits_list", None)
+        agent_ids = getattr(self.config, "agent_ids", None)
+        self.agent_manager = AgentManager.from_initialization(
+            num_agents=num_agents, traits_list=traits_list, agent_ids=agent_ids
+        )
+        self.agents = self.agent_manager.get_agents()
 
     def init_simulation(self):
         self.global_memory_manager = GlobalMemoryManager()
