@@ -2,6 +2,7 @@ from typing import Optional
 
 from config.models import SimulationConfig
 from memory.memory_manager import GlobalMemoryManager
+from simulation.agent_session import AgentSession
 from simulation.constants import DEFAULT_NUM_ROUNDS
 from agent.agent_manager import AgentManager
 
@@ -26,7 +27,11 @@ class SimulationManager:
         self.global_memory_manager.init_memory_managers(self.agents)
 
     def simulate_round(self):
-        pass
+        # NOTE: would also need to record the metadata here for the round,
+        # whatever that metadata happens to be.
+        for agent in self.agents:
+            agent_session = AgentSession(agent=agent)
+            agent_session.run()
 
     def simulate_rounds(self, num_rounds: int = DEFAULT_NUM_ROUNDS):
         print("Initializing simulation.")
