@@ -64,4 +64,4 @@ def select_default_trait(trait_type: str):
         return random.choice(DEFAULT_POLITICAL_VIEWS)
 
 
-DEFAULT_ENGAGEMENT_LEVELS = {"low": 0.1, "medium": 0.5, "high": 0.9}
+DEFAULT_ENGAGEMENT_LEVELS = {}
