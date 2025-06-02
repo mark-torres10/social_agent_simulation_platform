@@ -4,36 +4,38 @@ from agent.initialize_agents import Agent, initialize_agents
 
 class AgentManager:
     def __init__(self, agents: Optional[List[Agent]] = None):
-        self._agents = agents or []
+        if not agents:
+            self.init_agents()
+        else:
+            self.agents = agents
 
-    @classmethod
-    def from_initialization(
-        cls,
+    def init_agents(
+        self,
         num_agents: int = 1,
         traits_list: Optional[List[Dict[str, str]]] = None,
         agent_ids: Optional[List[str]] = None,
-    ) -> "AgentManager":
-        agents = initialize_agents(
+    ):
+        agents: List[Agent] = initialize_agents(
             num_agents=num_agents, traits_list=traits_list, agent_ids=agent_ids
         )
-        return cls(agents)
+        self.agents = agents
 
     def get_agent(self, index: int) -> Agent:
-        return self._agents[index]
+        return self.agents[index]
 
     def get_agents(self) -> List[Agent]:
-        return self._agents
+        return self.agents
 
     def update_agent_profile(
         self, index: int, trait_to_description: Dict[str, str]
     ) -> None:
-        self._agents[index].profile.update_profile(trait_to_description)
+        self.agents[index].profile.update_profile(trait_to_description)
 
     def __iter__(self) -> Iterator[Agent]:
-        return iter(self._agents)
+        return iter(self.agents)
 
     def __len__(self) -> int:
-        return len(self._agents)
+        return len(self.agents)
 
     def __getitem__(self, index: int) -> Agent:
-        return self._agents[index]
+        return self.agents[index]

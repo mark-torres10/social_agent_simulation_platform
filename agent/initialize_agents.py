@@ -14,6 +14,9 @@ class Agent:
     def __str__(self):
         return f"Agent(id={self.agent_id})\n{str(self.profile)}"
 
+    def __repr__(self):
+        return self.__str__()
+
 
 def initialize_agents(
     num_agents: int = DEFAULT_NUM_AGENTS,
