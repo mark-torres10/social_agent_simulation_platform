@@ -1,5 +1,6 @@
 from typing import Optional
 
+from agent.agent import Agent
 from agent.initialize_agents import initialize_agents
 from config.config_loader import load_config
 from memory.memory_manager import GlobalMemoryManager
@@ -35,15 +36,18 @@ class SimulationManager:
     def simulate_round(self):
         # NOTE: would also need to record the metadata here for the round,
         # whatever that metadata happens to be.
+        updated_agents: list[Agent] = []
         for agent in self.agents:
             agent_session = AgentSession(agent=agent)
-            agent_session.run()
+            agent: Agent = agent_session.run()
+            updated_agents.append(agent)
+        self.global_memory_manager.update_global_memory_manager(updated_agents)
+        self.agents = updated_agents
 
     def simulate_rounds(self, num_rounds: int = DEFAULT_NUM_ROUNDS):
         print("Initializing simulation.")
         self.init_simulation()
         print(f"Simulating {num_rounds} total rounds...")
-        breakpoint()
         for i in range(num_rounds):
             print(f"Simulating round {i+1}/{num_rounds}")
             self.simulate_round()

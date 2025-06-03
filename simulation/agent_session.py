@@ -1,6 +1,8 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from feeds.build_feeds import build_feed_for_agent
+from lib.helper import get_current_timestamp_str
+from pydantic import BaseModel, Field
 
 from agent.agent import Agent
 
@@ -8,16 +10,27 @@ from agent.agent import Agent
 class FeedPost(BaseModel):
     """Container class for a feed post."""
 
-    post_id: str  # author + timestamp.
-    author: str
-    timestamp: str
-    text: str
-    attachments: list[
-        str
-    ]  # description of attachments (e.g., images, links). Instead of including images, just include description of image.
-    liked_by: list[str]
-    shared_by: list[str]
-    comments: list[str]
+    post_id: str = Field(
+        default="", description="Post ID, which is the author + timestamp."
+    )
+    author: str = Field(default="", description="Author of the post.")
+    timestamp: str = Field(
+        default=get_current_timestamp_str(), description="Timestamp of the post."
+    )
+    text: str = Field(default="", description="Text of the post.")
+    attachments: Optional[list[str]] = Field(
+        default=None,
+        description="Description of attachments (e.g., images, links). Instead of including images, just include description of image.",
+    )
+    liked_by: Optional[list[str]] = Field(
+        default=None, description="List of users who liked the post."
+    )
+    shared_by: Optional[list[str]] = Field(
+        default=None, description="List of users who shared the post."
+    )
+    comments: Optional[list[str]] = Field(
+        default=None, description="List of comments on the post."
+    )
 
 
 class Feed(BaseModel):
@@ -56,8 +69,12 @@ class UserFeedManager:
     def __init__(self, agent: Agent):
         self.agent = agent
 
-    def load_latest_feed():
-        pass
+    # generic function for now. Would be the place to put some custom logic
+    # for loading each user's feed. Probably would want to precompute the
+    # feeds for the user, or dynamically adjust the recommendation algorithm
+    # based on the user's engagements from the previous rounds.
+    def load_latest_feed(self) -> Feed:
+        return build_feed_for_agent(agent_id=self.agent.agent_id)
 
 
 class UserFeedScrollManager:
@@ -161,20 +178,6 @@ class AgentSession:
         self.user_feed_manager = UserFeedManager(agent=agent)
         self.user_feed_scroll_manager = UserFeedScrollManager(agent=agent)
 
-    def scroll_feed(self):
-        feed: Feed = self.user_feed_manager.load_latest_feed()
-        observations: list[FeedObservation] = self.user_feed_scroll_manager.scroll_feed(
-            feed=feed
-        )
-        engagements: list[UserEngagement | None] = (
-            self.user_engagement_manager.engage_with_feed(
-                feed=feed, observations=observations
-            )
-        )
-        self.update_beliefs(
-            feed=feed, observations=observations, engagements=engagements
-        )
-
     def update_beliefs(
         self,
         feed: Feed,
@@ -194,17 +197,26 @@ class AgentSession:
         self.agent.update_beliefs(updated_beliefs=updated_beliefs)
         print(f"Finished updating beliefs for agent {self.agent.agent_id}")
 
-    # TODO: connect with MemoryManager.
-    def record_activity(self):
-        """Record the activity of the agent."""
-        pass
+    def scroll_feed(self):
+        feed: Feed = self.user_feed_manager.load_latest_feed()
+        observations: list[FeedObservation] = self.user_feed_scroll_manager.scroll_feed(
+            feed=feed
+        )
+        engagements: list[UserEngagement | None] = (
+            self.user_engagement_manager.engage_with_feed(
+                feed=feed, observations=observations
+            )
+        )
+        self.update_beliefs(
+            feed=feed, observations=observations, engagements=engagements
+        )
 
-    def run(self):
+    def run(self) -> Agent:
         """Run the agent session."""
         print(f"Running agent session for agent {self.agent.agent_id}")
         self.scroll_feed()
-        self.record_activity()
         print(f"Finished scroling feed for agent {self.agent.agent_id}")
+        return self.agent
 
 
 if __name__ == "__main__":
