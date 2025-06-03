@@ -1,5 +1,29 @@
 # UI/Backend Connection Plan
 
+## Progress Update (2024-06-03)
+
+### Latest Progress
+- **UI/Backend Connection Complete:** The Streamlit UI is now fully connected to the backend. User-provided configuration (number of agents, number of turns) is passed to the backend and used to initialize the simulation. The simulation is only initialized when the user clicks the "Initialize Simulation" button.
+- **Main Simulation Entry Point:** Added a main simulation entry point (`main.py`) for CLI and refactored the simulation manager to use explicit list type hints for agents and results.
+- **Data Model Refactor:** Introduced and integrated new `Feed`, `FeedPost`, `FeedObservation`, and `UserEngagement` models. The agent session and simulation logic now use these structured models throughout.
+- **UI Results Display:** The UI now displays real simulation results, with per-day (tabbed) and per-user (selectable) views. Each round's results are shown, including agent profiles, feeds, observations, and engagements.
+- **MemoryManager Refactor:** The memory manager now robustly handles database creation, batch operations, and is integrated with the simulation lifecycle. Data is persisted and can be extended for future export/reload features.
+- **Incremental Simulation:** Users can run single rounds or full simulations interactively from the UI, and results are accumulated and displayed.
+
+### What's Completed (updated)
+- [x] UI/backend connection: UI passes config to backend and displays real results.
+- [x] Main simulation entry point and refactored agent/session logic.
+- [x] Feed and UserEngagement models integrated throughout.
+- [x] MemoryManager refactor and integration.
+- [x] UI displays real simulation results, per day and per user.
+
+### What's In Progress / Outstanding (updated)
+- [ ] Advanced config: Support for agent personas, traits, and other settings in the UI/backend.
+- [ ] Error/loading handling: Robust error and loading state handling in the UI.
+- [ ] Export: Implement export of simulation results from backend to UI.
+- [ ] End-to-end and automated tests for the full flow.
+- [ ] UI/UX polish and accessibility improvements.
+
 ## Problem Statement
 - The current UI (Streamlit) is fully stubbed and does not interact with the backend simulation logic.
 - Users cannot run real simulations or see real results; all data is placeholder.
@@ -118,10 +142,10 @@
 
 ### 7. Implementation Checklist (Expanded)
 
-- [ ] Refactor UI config components to return values.
-- [ ] Define all fields in `SimulationConfig` and `AgentConfig`.
-- [ ] Implement all missing methods in `memory_manager.py`.
-- [ ] Refactor `SimulationManager` to return results for UI.
+- [x] Refactor UI config components to return values.
+- [x] Define all fields in `SimulationConfig` and `AgentConfig`.
+- [x] Implement all missing methods in `memory_manager.py`.
+- [x] Refactor `SimulationManager` to return results for UI.
 - [ ] Implement result display in the UI.
 - [ ] Add error/loading handling in the UI.
 - [ ] Manual and automated tests for end-to-end flow.
