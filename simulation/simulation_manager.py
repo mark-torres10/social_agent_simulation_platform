@@ -1,6 +1,7 @@
 from typing import Optional
 
-from config.models import SimulationConfig
+from agent.initialize_agents import initialize_agents
+from config.config_loader import load_config
 from memory.memory_manager import GlobalMemoryManager
 from simulation.agent_session import AgentSession
 from simulation.constants import DEFAULT_NUM_ROUNDS
@@ -10,17 +11,22 @@ from agent.agent_manager import AgentManager
 class SimulationManager:
     """Manages the simulation of the agents."""
 
-    def __init__(self, config: Optional[SimulationConfig] = None):
-        self.config = config or SimulationConfig()
+    def __init__(self, config_path: Optional[str] = None):
+        """
+        Args:
+            config_path: Path to the simulation config YAML file. If None or invalid, uses default config.
+        """
+        self.config = load_config(config_path, config_type="simulation")
 
     def init_agents(self):
         num_agents = getattr(self.config, "num_agents", 10)
         traits_list = getattr(self.config, "traits_list", None)
         agent_ids = getattr(self.config, "agent_ids", None)
-        self.agent_manager = AgentManager(
+
+        self.agents = initialize_agents(
             num_agents=num_agents, traits_list=traits_list, agent_ids=agent_ids
         )
-        self.agents = self.agent_manager.get_agents()
+        self.agent_manager = AgentManager(agents=self.agents)
 
     def init_simulation(self):
         self.global_memory_manager = GlobalMemoryManager()
@@ -37,6 +43,7 @@ class SimulationManager:
         print("Initializing simulation.")
         self.init_simulation()
         print(f"Simulating {num_rounds} total rounds...")
+        breakpoint()
         for i in range(num_rounds):
             print(f"Simulating round {i+1}/{num_rounds}")
             self.simulate_round()
@@ -45,11 +52,3 @@ class SimulationManager:
 
     def export_simulation_results(self):
         pass
-
-
-if __name__ == "__main__":
-    config = SimulationConfig()
-    simulation_manager = SimulationManager(config=config)
-    simulation_manager.init_agents()
-    simulation_manager.init_simulation()
-    simulation_manager.simulate_rounds()
