@@ -1,6 +1,5 @@
 """Class to manage memories."""
 
-import aiosqlite3
 import json
 import os
 import sqlite3
@@ -38,6 +37,8 @@ class MemoryManager:
     def __init__(self, memory_type: str, create_new_queue: bool = True):
         self.db_name = f"{memory_type}.db"
         self.db_path = os.path.join(TMP_DATA_PATH, self.db_name)
+        self.table_name = f"{memory_type}_table"
+
         if os.path.exists(self.db_path) and create_new_queue:
             print(
                 f"DB for memory type {memory_type} already exists. Not overwriting, using existing DB..."
@@ -45,6 +46,9 @@ class MemoryManager:
         if not os.path.exists(self.db_path):
             if create_new_queue:
                 print(f"Creating new SQLite DB for memory type {memory_type}...")
+                if not os.path.exists(TMP_DATA_PATH):
+                    print(f"Creating new directory for data at {TMP_DATA_PATH}...")
+                    os.makedirs(TMP_DATA_PATH)
                 self._init_queue_db()
             else:
                 raise ValueError(
@@ -54,8 +58,6 @@ class MemoryManager:
             print(f"Loading existing SQLite DB for memory type {memory_type}...")
             count = self.get_queue_length()
             print(f"Current queue size: {count} items")
-
-        self.table_name = f"{memory_type}_table"
 
     def __repr__(self):
         return f"MemoryManager(name={self.db_name}, db_path={self.db_path})"
@@ -112,23 +114,9 @@ class MemoryManager:
 
         return conn
 
-    async def _async_get_connection(self) -> sqlite3.Connection:
-        """Get an optimized SQLite connection with retry logic."""
-        conn = await aiosqlite3.connect(self.db_path)
-
-        # Configure connection for optimal performance
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA synchronous=NORMAL")
-        conn.execute("PRAGMA busy_timeout=30000")
-        conn.execute("PRAGMA cache_size=-64000")
-        conn.execute("PRAGMA mmap_size=268435456")
-        conn.execute("PRAGMA temp_store=MEMORY")
-
-        return conn
-
     def get_queue_length(self):
         with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(f"SELECT COUNT(*) FROM {self.db_name}")
+            cursor = conn.execute(f"SELECT COUNT(*) FROM {self.table_name}")
             return cursor.fetchone()[0]
 
     def batch_add_items_to_db(
@@ -151,14 +139,26 @@ class MemoryManager:
         for i, chunk in enumerate(chunks):
             if i % 10 == 0:
                 print(f"Processing batch {i + 1}/{total_chunks}...")
-            chunk = [{**item, **{"metadata": metadata}} for item in chunk]
+
+            # Convert dictionaries to tuples in the correct order for SQLite
+            chunk_tuples = [
+                (
+                    item["agent_id"],
+                    item["value"],
+                    item["turn_number"],
+                    item["timestamp"],
+                    json.dumps(metadata),
+                )
+                for item in chunk
+            ]
+
             with sqlite3.connect(self.db_path) as conn:
                 conn.executemany(
                     f"""
-                    INSERT INTO {self.db_name} (agent_id, value, turn_number, timestamp)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO {self.table_name} (agent_id, value, turn_number, timestamp, metadata)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
-                    chunk,
+                    chunk_tuples,
                 )
             conn.commit()
 
@@ -202,7 +202,7 @@ class MemoryManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
 
-            query = "SELECT id, agent_id, value, turn_number, timestamp, metadata FROM queue"
+            query = f"SELECT id, agent_id, value, turn_number, timestamp, metadata FROM {self.table_name}"
             conditions = []
             params = []
 
@@ -281,13 +281,13 @@ class GlobalMemoryManager:
             # get their profile
             profile = agent.profile.get_profile()
 
-            # get their history.
-            history = agent.profile.history.get_history()
+            # get their history. Remove it from the profile.
+            history = profile.pop("history")
 
             profiles.append(
                 {
                     "agent_id": agent.agent_id,
-                    "value": profile,
+                    "value": json.dumps(profile),
                     "turn_number": 0,
                     "timestamp": get_current_timestamp_str(),
                     "metadata": json.dumps({"type": "profile"}),
@@ -296,18 +296,20 @@ class GlobalMemoryManager:
             histories.append(
                 {
                     "agent_id": agent.agent_id,
-                    "value": history,
+                    "value": json.dumps(history),
                     "turn_number": 0,
                     "timestamp": get_current_timestamp_str(),
                     "metadata": json.dumps({"type": "history"}),
                 }
             )
 
-        profile_manager.batch_add_items_to_db(profiles)
-        history_manager.batch_add_items_to_db(histories)
+        profile_manager.batch_add_items_to_db(items=profiles)
+        history_manager.batch_add_items_to_db(items=histories)
 
-    def update_global_memory_manager(self, agents: list[Agent]):
+    def update_global_memory_manager(self, total_agent_session_results: list[dict]):
         """Updates the global memory manager with the latest memories and
         histories from the given agents."""
-        print(f"Updating global memory manager with {len(agents)} agents...")
+        print(
+            f"Updating global memory manager with {len(total_agent_session_results)} agents..."
+        )
         pass
