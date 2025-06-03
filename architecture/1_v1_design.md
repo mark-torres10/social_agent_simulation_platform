@@ -15,8 +15,11 @@ Proposed V1 design of architecture + file structure for repo.
             - worldview.py: manages the worldview of agents.
             - political_views.py: manages the political views of agents.
             - profile.py: manages the agent profile.
-            - engagement.py: manages the engagement tendencies of each agent, e.g., how likely they are to like/reply,
-            to which content they're likely to engage with, etc.
+            - engagement_preferences.py: manages the engagement tendencies of each agent, e.g., how likely they are to like/reply, to which content they're likely to engage with, etc. Should have the following fields:
+                - preferences_by_engagement_type: dict, where key = engagement type (post, comment, like, etc.) and value is a float between 0 and 1 that describes how likely someone is to do that type of engagement with a "qualified post" (meaning, a post that we've determined they possibly would engage with).
+                - topics_more_likely_to_engage_with: list of topics that a user is more likely to engage with.
+                - accounts_more_likely_to_engage_with: list of accounts that a user is more likely to engage with.
+                - other_engagement_preferences: list of free-form strings that describe other ways that their engagement behavior can be modified.
             - history.py: manages the full history of all agent characteristics, behaviors, and actions. Helpful for
             tracing and interpretability purposes later on, so we can see for a given agent how it evolves over time.
         /state: components that are meant to vary every single "day" of the simulation.

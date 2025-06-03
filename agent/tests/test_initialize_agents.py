@@ -11,17 +11,22 @@ def test_initialize_agents_default():
     with patch("agent.components.persistent.personality.select_default_trait", return_value=MOCKED_DEFAULT), \
          patch("agent.components.persistent.beliefs.select_default_trait", return_value=MOCKED_DEFAULT), \
          patch("agent.components.persistent.political_views.select_default_trait", return_value=MOCKED_DEFAULT), \
-         patch("agent.components.persistent.worldview.select_default_trait", return_value=MOCKED_DEFAULT):
+         patch("agent.components.persistent.worldview.select_default_trait", return_value=MOCKED_DEFAULT), \
+         patch("agent.components.persistent.engagement_preferences.select_default_trait", return_value=MOCKED_DEFAULT), \
+         patch("agent.components.persistent.history.select_default_trait", return_value=MOCKED_DEFAULT):
         agents = initialize_agents()
     expected_result = DEFAULT_NUM_AGENTS
     assert len(agents) == expected_result
     for i, agent in enumerate(agents):
         assert isinstance(agent, Agent)
         assert agent.agent_id == str(i)
-        assert agent.profile.get_profile()["personality"] == MOCKED_DEFAULT
-        assert agent.profile.get_profile()["beliefs"] == MOCKED_DEFAULT
-        assert agent.profile.get_profile()["political_views"] == MOCKED_DEFAULT
-        assert agent.profile.get_profile()["worldviews"] == MOCKED_DEFAULT
+        profile = agent.profile.get_profile()
+        assert profile["personality"] == MOCKED_DEFAULT
+        assert profile["beliefs"] == MOCKED_DEFAULT
+        assert profile["political_views"] == MOCKED_DEFAULT
+        assert profile["worldviews"] == MOCKED_DEFAULT
+        assert profile["engagement_preferences"] == MOCKED_DEFAULT
+        assert profile["history"] == MOCKED_DEFAULT
 
 def test_initialize_agents_custom_num_agents():
     num_agents = 3
@@ -34,13 +39,41 @@ def test_initialize_agents_custom_num_agents():
 
 def test_initialize_agents_with_traits_list():
     traits_list = [
-        {"personality": "p1", "beliefs": "b1", "political_views": "pv1", "worldviews": "w1"},
-        {"personality": "p2", "beliefs": "b2", "political_views": "pv2", "worldviews": "w2"},
+        {
+            "personality": "p1", 
+            "beliefs": "b1", 
+            "political_views": "pv1", 
+            "worldviews": "w1",
+            "engagement_preferences": "ep1",
+            "history": "h1"
+        },
+        {
+            "personality": "p2", 
+            "beliefs": "b2", 
+            "political_views": "pv2", 
+            "worldviews": "w2",
+            "engagement_preferences": "ep2",
+            "history": "h2"
+        },
     ]
     agents = initialize_agents(traits_list=traits_list)
     expected_result = [
-        {"personality": "p1", "beliefs": "b1", "political_views": "pv1", "worldviews": "w1"},
-        {"personality": "p2", "beliefs": "b2", "political_views": "pv2", "worldviews": "w2"},
+        {
+            "personality": "p1", 
+            "beliefs": "b1", 
+            "political_views": "pv1", 
+            "worldviews": "w1",
+            "engagement_preferences": "ep1",
+            "history": "h1"
+        },
+        {
+            "personality": "p2", 
+            "beliefs": "b2", 
+            "political_views": "pv2", 
+            "worldviews": "w2",
+            "engagement_preferences": "ep2",
+            "history": "h2"
+        },
     ]
     for agent, expected_profile in zip(agents, expected_result):
         assert agent.profile.get_profile() == expected_profile
@@ -56,14 +89,42 @@ def test_initialize_agents_with_agent_ids():
 
 def test_initialize_agents_with_traits_list_and_agent_ids():
     traits_list = [
-        {"personality": "p1", "beliefs": "b1", "political_views": "pv1", "worldviews": "w1"},
-        {"personality": "p2", "beliefs": "b2", "political_views": "pv2", "worldviews": "w2"},
+        {
+            "personality": "p1", 
+            "beliefs": "b1", 
+            "political_views": "pv1", 
+            "worldviews": "w1",
+            "engagement_preferences": "ep1",
+            "history": "h1"
+        },
+        {
+            "personality": "p2", 
+            "beliefs": "b2", 
+            "political_views": "pv2", 
+            "worldviews": "w2",
+            "engagement_preferences": "ep2",
+            "history": "h2"
+        },
     ]
     agent_ids = ["X", "Y"]
     agents = initialize_agents(traits_list=traits_list, agent_ids=agent_ids)
     expected_result = [
-        ("X", {"personality": "p1", "beliefs": "b1", "political_views": "pv1", "worldviews": "w1"}),
-        ("Y", {"personality": "p2", "beliefs": "b2", "political_views": "pv2", "worldviews": "w2"}),
+        ("X", {
+            "personality": "p1", 
+            "beliefs": "b1", 
+            "political_views": "pv1", 
+            "worldviews": "w1",
+            "engagement_preferences": "ep1",
+            "history": "h1"
+        }),
+        ("Y", {
+            "personality": "p2", 
+            "beliefs": "b2", 
+            "political_views": "pv2", 
+            "worldviews": "w2",
+            "engagement_preferences": "ep2",
+            "history": "h2"
+        }),
     ]
     for agent, (expected_id, expected_profile) in zip(agents, expected_result):
         assert agent.agent_id == expected_id
