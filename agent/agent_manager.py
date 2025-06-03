@@ -1,5 +1,5 @@
 from typing import List, Dict, Optional, Iterator
-from agent.models import Agent
+from agent.agent import Agent
 from agent.initialize_agents import initialize_agents
 
 

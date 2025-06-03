@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Optional
 from agent.components.persistent.profile import AgentProfile
-from agent.models import Agent
+from agent.agent import Agent
 
 DEFAULT_NUM_AGENTS = 10
 
