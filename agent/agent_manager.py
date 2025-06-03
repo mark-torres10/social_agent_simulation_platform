@@ -1,10 +1,10 @@
-from typing import List, Dict, Optional, Iterator
+from typing import Optional, Iterator
 from agent.agent import Agent
 from agent.initialize_agents import initialize_agents
 
 
 class AgentManager:
-    def __init__(self, agents: Optional[List[Agent]] = None):
+    def __init__(self, agents: Optional[list[Agent]] = None):
         if not agents:
             self.init_agents()
         else:
@@ -13,10 +13,10 @@ class AgentManager:
     def init_agents(
         self,
         num_agents: int = 1,
-        traits_list: Optional[List[Dict[str, str]]] = None,
-        agent_ids: Optional[List[str]] = None,
+        traits_list: Optional[list[dict[str, str]]] = None,
+        agent_ids: Optional[list[str]] = None,
     ):
-        agents: List[Agent] = initialize_agents(
+        agents: list[Agent] = initialize_agents(
             num_agents=num_agents, traits_list=traits_list, agent_ids=agent_ids
         )
         self.agents = agents
@@ -24,11 +24,11 @@ class AgentManager:
     def get_agent(self, index: int) -> Agent:
         return self.agents[index]
 
-    def get_agents(self) -> List[Agent]:
+    def get_agents(self) -> list[Agent]:
         return self.agents
 
     def update_agent_profile(
-        self, index: int, trait_to_description: Dict[str, str]
+        self, index: int, trait_to_description: dict[str, str]
     ) -> None:
         self.agents[index].profile.update_profile(trait_to_description)
 

@@ -33,7 +33,7 @@ class AgentProfile:
             "political_views": self.political_views.get_description(),
             "worldviews": self.worldviews.get_description(),
             "engagement_preferences": self.engagement_preferences.get_description(),
-            "history": self.history.get_description(),
+            "history": self.history.get_history(),
         }
 
     def update_profile(self, trait_to_description: dict):

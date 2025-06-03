@@ -1,6 +1,7 @@
 from faker import Faker
+
+from feeds.models import FeedPost
 from lib.helper import get_current_timestamp_str
-from simulation.agent_session import FeedPost
 
 fake = Faker()
 

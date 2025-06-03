@@ -33,16 +33,21 @@ class SimulationManager:
         self.global_memory_manager = GlobalMemoryManager()
         self.global_memory_manager.init_memory_managers(self.agents)
 
-    def simulate_round(self):
+    def simulate_round(self) -> list[dict]:
         # NOTE: would also need to record the metadata here for the round,
         # whatever that metadata happens to be.
         updated_agents: list[Agent] = []
+        total_agent_session_results: list[dict] = []
         for agent in self.agents:
             agent_session = AgentSession(agent=agent)
-            agent: Agent = agent_session.run()
-            updated_agents.append(agent)
-        self.global_memory_manager.update_global_memory_manager(updated_agents)
+            agent_session_results: dict = agent_session.run()
+            updated_agents.append(agent_session_results["agent"])
+            total_agent_session_results.append(agent_session_results)
+        self.global_memory_manager.update_global_memory_manager(
+            total_agent_session_results
+        )
         self.agents = updated_agents
+        return total_agent_session_results
 
     def simulate_rounds(self, num_rounds: int = DEFAULT_NUM_ROUNDS):
         print("Initializing simulation.")

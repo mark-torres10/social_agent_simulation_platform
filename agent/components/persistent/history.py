@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional
 from datetime import datetime
 
 from agent.components.persistent.defaults import select_default_trait
@@ -11,13 +11,13 @@ class AgentHistory:
         trait_type: str = "history",
     ):
         if not description:
-            description = select_default_trait(trait_type)
+            description = select_default_trait(trait_type=trait_type)
         self.description = description
         self.trait_type = trait_type
-        self.history_entries: List[Dict] = []
+        self.history_entries: list[dict] = []
 
     def add_entry(
-        self, entry_type: str, description: str, metadata: Optional[Dict] = None
+        self, entry_type: str, description: str, metadata: Optional[dict] = None
     ):
         """Add a new entry to the agent's history.
 
@@ -34,15 +34,15 @@ class AgentHistory:
         }
         self.history_entries.append(entry)
 
-    def get_history(self) -> List[Dict]:
+    def get_history(self) -> list[dict]:
         """Get the full history of entries."""
         return self.history_entries
 
-    def get_recent_history(self, n_entries: int = 10) -> List[Dict]:
+    def get_recent_history(self, n_entries: int = 10) -> list[dict]:
         """Get the n most recent history entries."""
         return self.history_entries[-n_entries:]
 
-    def get_history_by_type(self, entry_type: str) -> List[Dict]:
+    def get_history_by_type(self, entry_type: str) -> list[dict]:
         """Get all history entries of a specific type."""
         return [entry for entry in self.history_entries if entry["type"] == entry_type]
 

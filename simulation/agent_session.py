@@ -1,66 +1,9 @@
-from typing import Optional
-
-from feeds.build_feeds import build_feed_for_agent
-from lib.helper import get_current_timestamp_str
-from pydantic import BaseModel, Field
+"""Contains logic for simulating a single round of interaction for a given agent."""
 
 from agent.agent import Agent
-
-
-class FeedPost(BaseModel):
-    """Container class for a feed post."""
-
-    post_id: str = Field(
-        default="", description="Post ID, which is the author + timestamp."
-    )
-    author: str = Field(default="", description="Author of the post.")
-    timestamp: str = Field(
-        default=get_current_timestamp_str(), description="Timestamp of the post."
-    )
-    text: str = Field(default="", description="Text of the post.")
-    attachments: Optional[list[str]] = Field(
-        default=None,
-        description="Description of attachments (e.g., images, links). Instead of including images, just include description of image.",
-    )
-    liked_by: Optional[list[str]] = Field(
-        default=None, description="List of users who liked the post."
-    )
-    shared_by: Optional[list[str]] = Field(
-        default=None, description="List of users who shared the post."
-    )
-    comments: Optional[list[str]] = Field(
-        default=None, description="List of comments on the post."
-    )
-
-
-class Feed(BaseModel):
-    """Container class for a feed."""
-
-    posts: list[FeedPost]
-
-    def __len__(self):
-        return len(self.posts)
-
-
-class FeedObservation(BaseModel):
-    """Observation/thought that a user has about a post in a feed."""
-
-    metadata: dict  # metadata about the post.
-    observation: Optional[str] = None  # observations about the post, if any
-    desired_actions: Optional[dict] = (
-        None  # desired action(s), e.g., like/post/comment/follow, etc, and the rationale for each.
-    )
-
-
-# flesh this out. This should be a class that contains how the user engaged with a post.
-class UserEngagement(BaseModel):
-    """Container class for a user engagement."""
-
-    metadata: dict  # metadata about the post.
-    observation: FeedObservation
-    engagement: (
-        dict  # engagement, e.g., like/post/comment/follow, etc., plus rationale.
-    )
+from feeds.build_feeds import build_feed_for_agent
+from feeds.models import Feed, FeedObservation, FeedPost
+from simulation.models import UserEngagement
 
 
 class UserFeedManager:
@@ -87,7 +30,7 @@ class UserFeedScrollManager:
         self.agent = agent
 
     def scroll_feed(self, feed: Feed) -> list[FeedObservation]:
-        return [self.make_observation_about_post(post) for post in feed]
+        return [self.make_observation_about_post(post) for post in feed.posts]
 
     # TODO: should be an LLM prompt + based on their engagement tendencies.
     def make_observation_about_post(self, post: FeedPost) -> FeedObservation:
@@ -198,25 +141,32 @@ class AgentSession:
         print(f"Finished updating beliefs for agent {self.agent.agent_id}")
 
     def scroll_feed(self):
-        feed: Feed = self.user_feed_manager.load_latest_feed()
-        observations: list[FeedObservation] = self.user_feed_scroll_manager.scroll_feed(
-            feed=feed
+        self.feed: Feed = self.user_feed_manager.load_latest_feed()
+        self.observations: list[FeedObservation] = (
+            self.user_feed_scroll_manager.scroll_feed(feed=self.feed)
         )
-        engagements: list[UserEngagement | None] = (
+        self.engagements: list[UserEngagement | None] = (
             self.user_engagement_manager.engage_with_feed(
-                feed=feed, observations=observations
+                feed=self.feed, observations=self.observations
             )
         )
         self.update_beliefs(
-            feed=feed, observations=observations, engagements=engagements
+            feed=self.feed,
+            observations=self.observations,
+            engagements=self.engagements,
         )
 
-    def run(self) -> Agent:
+    def run(self) -> dict:
         """Run the agent session."""
         print(f"Running agent session for agent {self.agent.agent_id}")
         self.scroll_feed()
         print(f"Finished scroling feed for agent {self.agent.agent_id}")
-        return self.agent
+        return {
+            "agent": self.agent,
+            "feed": self.feed,
+            "observations": self.observations,
+            "engagements": self.engagements,
+        }
 
 
 if __name__ == "__main__":

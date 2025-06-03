@@ -1,4 +1,4 @@
-from simulation.agent_session import Feed
+from feeds.models import Feed
 from simulation.default_posts import generate_dummy_posts
 
 
