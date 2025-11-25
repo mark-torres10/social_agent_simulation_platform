@@ -9,6 +9,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "langchain>=1.1.0",
     "openai>=2.8.1",
+    "opik>=1.9.30",
     "pydantic>=2.12.4",
 ]
 

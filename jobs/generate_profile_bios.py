@@ -8,6 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from db.db import initialize_database, read_all_profiles, read_all_feed_posts, read_all_generated_bios, write_generated_bio_to_database
 from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
+from lib.opik_telemetry import get_opik_client, log_llm_request
 
 GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert at creating concise and accurate bios
@@ -50,6 +51,7 @@ if not api_key:
 MAX_POSTS_SAMPLE = 20
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
+opik_client = get_opik_client()
 
 def get_posts_sample(posts: list[BlueskyFeedPost], max_posts: int = MAX_POSTS_SAMPLE) -> str:
     """Get a sample of posts formatted for the prompt.
@@ -99,7 +101,17 @@ def generate_bio_for_profile(
     )
     
     response = llm.invoke(prompt)
-    return response.content.strip()
+    generated_bio = response.content.strip()
+    
+    log_llm_request(
+        opik_client,
+        model="gpt-4o-mini",
+        input_data={"profile_handle": profile.handle},
+        output=generated_bio,
+        metadata={"display_name": profile.display_name, "num_posts": len(posts)},
+    )
+    
+    return generated_bio
 
 def main():
     initialize_database()
