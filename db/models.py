@@ -32,3 +32,27 @@ class Feed(BaseModel):
     agent_id: str
     created_at: str
     items: list[FeedItem]
+
+
+class BlueskyProfile(BaseModel):
+    """Relevant information from a Bluesky profile."""
+    handle: str
+    did: str
+    display_name: str
+    bio: str
+    followers_count: int
+    follows_count: int
+    posts_count: int
+
+
+class BlueskyFeedPost(BaseModel):
+    uri: str
+    author_display_name: str
+    author_handle: str
+    text: str
+    bookmark_count: int
+    like_count: int
+    quote_count: int
+    reply_count: int
+    repost_count: int
+    created_at: str
