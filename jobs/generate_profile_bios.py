@@ -121,14 +121,9 @@ def main():
     print("Reading profiles and feed posts from database...")
     profiles: list[BlueskyProfile] = read_all_profiles()
     feed_posts: list[BlueskyFeedPost] = read_all_feed_posts()
-    posts_by_author: dict[str, list[BlueskyFeedPost]] = {
-        profile.handle: [
-            post for post in feed_posts
-            if post.author_handle == profile.handle
-        ]
-        for profile in profiles
-    }
-
+    posts_by_author: dict[str, list[BlueskyFeedPost]] = {}
+    for post in feed_posts:
+        posts_by_author.setdefault(post.author_handle, []).append(post)
 
     print("Generating bios for profiles...")
     for i, profile in enumerate(profiles, 1):
