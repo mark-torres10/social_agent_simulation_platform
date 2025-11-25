@@ -56,3 +56,15 @@ class BlueskyFeedPost(BaseModel):
     reply_count: int
     repost_count: int
     created_at: str
+
+
+class GeneratedBio(BaseModel):
+    """An AI-generated bio for a Bluesky profile."""
+    handle: str
+    generated_bio: str
+    created_at: str
+
+
+class GeneratedFeed(BaseModel):
+    """A feed generated for an AI agent."""
+    pass

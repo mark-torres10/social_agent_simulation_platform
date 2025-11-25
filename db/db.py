@@ -8,7 +8,8 @@ import os
 import sqlite3
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
+from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
 
@@ -50,6 +51,14 @@ def initialize_database() -> None:
                 quote_count INTEGER NOT NULL,
                 reply_count INTEGER NOT NULL,
                 repost_count INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS agent_bios (
+                handle TEXT PRIMARY KEY,
+                generated_bio TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
         """)
@@ -136,6 +145,21 @@ def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
         ])
         conn.commit()
 
+
+def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
+    """Write a generated bio to the database.
+    
+    Args:
+        handle: Handle of the profile
+        generated_bio: Generated bio string
+    """
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO agent_bios
+            (handle, generated_bio, created_at)
+            VALUES (?, ?, ?)
+        """, (handle, generated_bio, get_current_timestamp()))
+        conn.commit()
 
 def read_profile(handle: str) -> Optional[BlueskyProfile]:
     """Read a Bluesky profile by handle.
@@ -273,6 +297,24 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
                 quote_count=row["quote_count"],
                 reply_count=row["reply_count"],
                 repost_count=row["repost_count"],
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+
+def read_all_generated_bios() -> list[GeneratedBio]:
+    """Read all generated bios from the database.
+    
+    Returns:
+        List of all GeneratedBio models
+    """
+    with get_connection() as conn:
+        rows = conn.execute("SELECT * FROM agent_bios").fetchall()
+        return [
+            GeneratedBio(
+                handle=row["handle"],
+                generated_bio=row["generated_bio"],
                 created_at=row["created_at"],
             )
             for row in rows
