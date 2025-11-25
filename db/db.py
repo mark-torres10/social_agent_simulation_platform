@@ -58,7 +58,7 @@ def initialize_database() -> None:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS agent_bios (
                 handle TEXT PRIMARY KEY,
-                generated_bio TEXT NOT NULL
+                generated_bio TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
         """)

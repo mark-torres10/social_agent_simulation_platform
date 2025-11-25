@@ -8,8 +8,9 @@ dependencies = [
     "atproto>=0.0.63",
     "dotenv>=0.9.9",
     "langchain>=1.1.0",
+    "langchain-openai>=1.1.0",
+    "langfuse>=3.10.1",
     "openai>=2.8.1",
-    "opik>=1.9.30",
     "pydantic>=2.12.4",
 ]
 
