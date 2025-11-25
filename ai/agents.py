@@ -4,12 +4,14 @@ class SocialMediaAgent:
     def __init__(self, name: str):
         self.name = name
         self.bio = ""
+        self.generated_bio = ""
         self.followers = 0
         self.following = 0
+        self.posts_count = 0
         self.posts = []
-        self.likes = 0
-        self.comments = 0
-        self.follows = 0
+        self.likes = []
+        self.comments = []
+        self.follows = []
 
     def get_feed(self) -> Feed:
         pass
