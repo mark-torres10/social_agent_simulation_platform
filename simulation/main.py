@@ -1,21 +1,18 @@
-from ai.agents import (
-    load_agents, SocialMediaAgent,
-    record_agent_actions,
-)
+from ai.agents import SocialMediaAgent, record_agent_actions
+from ai.create_initial_agents import create_initial_agents
 
-def simulate_turn() -> dict:
+def simulate_turn(agents: list[SocialMediaAgent]) -> dict:
     total_actions = {
         "likes": 0,
         "comments": 0,
         "follows": 0,
     }
-    agents: list[SocialMediaAgent] = load_agents()
     for agent in agents:
-        agent.get_feed()
+        feed = agent.get_feed()
         
-        likes = agent.like_posts()
-        comments = agent.comment_posts()
-        follows = agent.follow_users()
+        likes = agent.like_posts(feed)
+        comments = agent.comment_posts(feed)
+        follows = agent.follow_users(feed)
 
         record_agent_actions({
             "likes": likes,
@@ -30,9 +27,10 @@ def simulate_turn() -> dict:
     return total_actions
 
 def main():
+    agents: list[SocialMediaAgent] = create_initial_agents()
     for i in range(10):
         print(f"Turn {i+1}")
-        total_actions = simulate_turn()
+        total_actions = simulate_turn(agents)
         print(f"Total actions on turn {i+1}: {total_actions}")
 
 

@@ -63,3 +63,8 @@ class GeneratedBio(BaseModel):
     handle: str
     generated_bio: str
     created_at: str
+
+
+class GeneratedFeed(BaseModel):
+    """A feed generated for an AI agent."""
+    pass
