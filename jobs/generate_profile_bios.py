@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from db.db import initialize_database, read_all_profiles, read_all_feed_posts, write_generated_bio_to_database
-from db.models import BlueskyProfile, BlueskyFeedPost
+from db.db import initialize_database, read_all_profiles, read_all_feed_posts, read_all_generated_bios, write_generated_bio_to_database
+from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 
 GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert at creating concise and accurate bios
@@ -119,10 +119,14 @@ def main():
     for i, profile in enumerate(profiles, 1):
         print(f"Generating bio for profile {i} of {len(profiles)}...")
         posts = posts_by_author[profile.handle]
-        generated_bio = generate_bio_for_profile(profile, posts)
+        generated_bio: str = generate_bio_for_profile(profile, posts)
         write_generated_bio_to_database(profile.handle, generated_bio)
         print(f"Generated bio for {profile.handle}: {generated_bio}")
 
+    print("All bios generated and written to database.")
+    print("Reading all generated bios from database...")
+    generated_bios: list[GeneratedBio] = read_all_generated_bios()
+    print(f"Found {len(generated_bios)} generated bios.")
 
 if __name__ == "__main__":
     main()

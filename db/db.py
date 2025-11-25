@@ -8,7 +8,7 @@ import os
 import sqlite3
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
@@ -297,6 +297,24 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
                 quote_count=row["quote_count"],
                 reply_count=row["reply_count"],
                 repost_count=row["repost_count"],
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+
+def read_all_generated_bios() -> list[GeneratedBio]:
+    """Read all generated bios from the database.
+    
+    Returns:
+        List of all GeneratedBio models
+    """
+    with get_connection() as conn:
+        rows = conn.execute("SELECT * FROM agent_bios").fetchall()
+        return [
+            GeneratedBio(
+                handle=row["handle"],
+                generated_bio=row["generated_bio"],
                 created_at=row["created_at"],
             )
             for row in rows
