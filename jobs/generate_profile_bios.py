@@ -99,19 +99,22 @@ def generate_bio_for_profile(
         posts_count=profile.posts_count,
         posts_sample=posts_sample,
     )
-    
-    response = llm.invoke(prompt)
-    generated_bio = response.content.strip()
-    
-    log_llm_request(
-        langfuse_client,
-        model="gpt-4o-mini",
-        input_data={"profile_handle": profile.handle},
-        output=generated_bio,
-        metadata={"display_name": profile.display_name, "num_posts": len(posts)},
-    )
-    
-    return generated_bio
+
+    try:
+        response = llm.invoke(prompt)
+        generated_bio = response.content.strip()
+        log_llm_request(
+            langfuse_client,
+            model="gpt-4o-mini",
+            input_data={"profile_handle": profile.handle},
+            output=generated_bio,
+            metadata={"display_name": profile.display_name, "num_posts": len(posts)},
+        )
+        
+        return generated_bio
+    except Exception as e:
+        raise ValueError(f"Error generating bio for {profile.handle}: {e}")
+
 
 def main():
     initialize_database()
