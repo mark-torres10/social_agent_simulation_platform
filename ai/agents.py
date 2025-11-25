@@ -1,8 +1,8 @@
 from db.models import BlueskyFeedPost, Like, Comment, Follow, GeneratedFeed
 
 class SocialMediaAgent:
-    def __init__(self, name: str):
-        self.name: str = name
+    def __init__(self, handle: str):
+        self.handle: str = handle
         self.bio: str = ""
         self.generated_bio: str = ""
         self.followers: int = 0

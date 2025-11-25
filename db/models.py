@@ -1,3 +1,4 @@
+import uuid
 from pydantic import BaseModel
 
 class Like(BaseModel):
@@ -19,20 +20,6 @@ class Follow(BaseModel):
     agent_id: str
     user_id: str
     created_at: str
-
-
-class FeedItem(BaseModel):
-    feed_item_id: str
-    text: str
-    created_at: str
-
-
-class Feed(BaseModel):
-    feed_id: str
-    agent_id: str
-    created_at: str
-    items: list[FeedItem]
-
 
 class BlueskyProfile(BaseModel):
     """Relevant information from a Bluesky profile."""
@@ -65,6 +52,15 @@ class GeneratedBio(BaseModel):
     created_at: str
 
 
+# TODO: for now, we support only Bluesky posts being added to feeds.
+# We'll revisit how to add AI-generated posts to feeds later on.
 class GeneratedFeed(BaseModel):
     """A feed generated for an AI agent."""
-    pass
+    feed_id: str
+    agent_handle: str
+    created_at: str
+    items: list[BlueskyFeedPost]
+
+    @classmethod
+    def generate_feed_id(cls) -> str:
+        return f"feed_{str(uuid.uuid4())}"
