@@ -1,0 +1,64 @@
+"""Generate candidate posts for the feeds."""
+
+from ai.agents import SocialMediaAgent
+from db.db import read_all_feed_posts, load_feed_post_uris_from_current_run
+from db.models import BlueskyFeedPost
+
+
+# TODO: we can get arbitrarily complex with how we do this later
+# on, but as a first pass it's easy enough to just load all the posts.
+def load_posts() -> list[BlueskyFeedPost]:
+    """Load the posts for the feeds."""
+    return read_all_feed_posts()
+
+
+def load_seen_post_uris(
+    agent: SocialMediaAgent,
+    run_id: str
+) -> set[str]:
+    """Load the posts that the agent has already seen in the given run.
+    
+    Returns a set of URIs.
+    """
+    return load_feed_post_uris_from_current_run(
+        agent_handle=agent.handle,
+        run_id=run_id
+    )
+
+
+def filter_candidate_posts(
+    candidate_posts: list[BlueskyFeedPost],
+    agent: SocialMediaAgent,
+    run_id: str
+) -> list[BlueskyFeedPost]:
+    """Filter the posts that are candidates for the feeds.
+    
+    Remove posts that:
+    - The agent has already seen.
+    - The agent themselves posted (or their original Bluesky profile posted)
+    """
+
+    seen_post_uris: set[str] = load_seen_post_uris(agent=agent, run_id=run_id)
+    candidate_posts = [
+        p for p in candidate_posts
+        if p.uri not in seen_post_uris
+        and p.author_handle != agent.handle
+    ]
+
+    return candidate_posts
+
+
+def load_candidate_posts(agent: SocialMediaAgent, run_id: str) -> list[BlueskyFeedPost]:
+    """Load the candidate posts for the feeds.
+    
+    Remove posts that:
+    - The agent has already seen.
+    - The agent themselves posted (or their original Bluesky profile posted)
+    """
+    candidate_posts: list[BlueskyFeedPost] = load_posts()
+    candidate_posts = filter_candidate_posts(
+        candidate_posts=candidate_posts,
+        agent=agent,
+        run_id=run_id
+    )
+    return candidate_posts
