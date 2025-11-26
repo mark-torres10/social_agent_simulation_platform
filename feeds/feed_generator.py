@@ -12,7 +12,22 @@ def generate_feed(
     turn_number: int,
     feed_type: str
 ) -> GeneratedFeed:
-    """Generate a feed for an agent."""
+    """
+    Create a GeneratedFeed for the given agent from candidate posts.
+    
+    Parameters:
+        agent (SocialMediaAgent): The agent for whom the feed is generated.
+        candidate_posts (list[BlueskyFeedPost]): Candidate posts to consider when building the feed.
+        run_id (str): Identifier for the current run.
+        turn_number (int): Turn number within the run.
+        feed_type (str): Type of feed to generate; supported value: "chronological".
+    
+    Returns:
+        GeneratedFeed: A feed object populated with feed_id, run_id, turn_number, agent_handle, post_uris, and created_at.
+    
+    Raises:
+        NotImplementedError: If an unsupported feed_type is provided.
+    """
     if feed_type == "chronological":
         feed_dict = generate_chronological_feed(
             candidate_posts=candidate_posts,
@@ -37,15 +52,20 @@ def generate_feeds(
     turn_number: int,
     feed_type: str = "chronological"
 ) -> dict[str, list[BlueskyFeedPost]]:
-    """Generate feeds for all the agents.
+    """
+    Generate and hydrate feeds for a list of agents.
     
-    Returns a dictionary of agent handles to lists of hydrated BlueskyFeedPost models.
-
-    Does the following:
-    1. Generates a feed for each agent.
-    2. Writes the unhydrated feeds to the database.
-    3. Hydrates the posts for each feed.
-    4. Returns a dictionary of agent handles to lists of hydrated BlueskyFeedPost models.
+    Parameters:
+        agents (list[SocialMediaAgent]): Agents to generate feeds for.
+        run_id (str): Identifier for this run.
+        turn_number (int): Turn number within the run.
+        feed_type (str): Type of feed to generate; currently supports "chronological".
+    
+    Returns:
+        dict[str, list[BlueskyFeedPost]]: Mapping from agent handle to the ordered, hydrated list of feed posts.
+    
+    Raises:
+        ValueError: If a feed references a post URI that cannot be found during hydration.
     """
     feeds: dict[str, GeneratedFeed] = {}
     for agent in agents:

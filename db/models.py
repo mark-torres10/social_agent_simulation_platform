@@ -65,4 +65,10 @@ class GeneratedFeed(BaseModel):
 
     @classmethod
     def generate_feed_id(cls) -> str:
+        """
+        Generate a new feed identifier.
+        
+        Returns:
+            str: Feed ID in the format "feed_<uuid4>", where <uuid4> is a randomly generated UUID4.
+        """
         return f"feed_{str(uuid.uuid4())}"

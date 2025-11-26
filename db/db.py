@@ -27,7 +27,17 @@ def get_connection() -> sqlite3.Connection:
 
 
 def initialize_database() -> None:
-    """Initialize the database by creating tables if they don't exist."""
+    """
+    Create the SQLite schema required by the application if it is missing.
+    
+    Creates these tables when they do not already exist:
+    - bluesky_profiles: handle (PK), did, display_name, bio, followers_count, follows_count, posts_count
+    - bluesky_feed_posts: uri (PK), author_display_name, author_handle, text, bookmark_count, like_count, quote_count, reply_count, repost_count, created_at
+    - agent_bios: handle (PK), generated_bio, created_at
+    - generated_feeds: feed_id, run_id, turn_number, agent_handle, post_uris, created_at with a composite primary key (agent_handle, run_id, turn_number)
+    
+    Commits the schema changes to the database.
+    """
     with get_connection() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS bluesky_profiles (
@@ -160,11 +170,12 @@ def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
 
 
 def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
-    """Write a generated bio to the database.
+    """
+    Store or update the generated bio for a profile handle in the agent_bios table and record the current timestamp.
     
-    Args:
-        handle: Handle of the profile
-        generated_bio: Generated bio string
+    Parameters:
+        handle (str): Profile handle to associate the generated bio with.
+        generated_bio (str): Generated biography text to store.
     """
     with get_connection() as conn:
         conn.execute("""
@@ -179,10 +190,13 @@ def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
 # agent_handle, run_id, turn_number because maybe at some point we'll have
 # multiple feeds per agent per run.
 def write_generated_feed(feed: GeneratedFeed) -> None:
-    """Write a generated feed to the database.
+    """
+    Insert or replace a GeneratedFeed record in the database.
     
-    Args:
-        feed: GeneratedFeed model to write
+    Stores the feed's fields into the generated_feeds table; the `post_uris` list is JSON-encoded before storage. If a record exists for the same (agent_handle, run_id, turn_number) it will be replaced.
+    
+    Parameters:
+        feed (GeneratedFeed): The generated feed to persist.
     """
     with get_connection() as conn:
         conn.execute("""
@@ -200,18 +214,19 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
         conn.commit()
 
 def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
-    """Read a generated feed by agent_handle, run_id, and turn_number.
+    """
+    Retrieve the GeneratedFeed for the given agent, run, and turn.
     
-    Args:
-        agent_handle: Agent handle to look up
-        run_id: Run ID to look up
-        turn_number: Turn number to look up
+    Parameters:
+        agent_handle (str): Agent handle to look up.
+        run_id (str): Run ID to look up.
+        turn_number (int): Turn number to look up.
     
     Returns:
-        GeneratedFeed model for the specified agent, run, and turn
-        
+        GeneratedFeed: The generated feed for the specified agent, run, and turn.
+    
     Raises:
-        ValueError: If no feed is found for the given agent_handle, run_id, and turn_number
+        ValueError: If no feed is found for the given agent_handle, run_id, and turn_number.
     """
     with get_connection() as conn:
         row = conn.execute(
@@ -375,10 +390,11 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
 
 
 def read_all_generated_bios() -> list[GeneratedBio]:
-    """Read all generated bios from the database.
+    """
+    Retrieve all generated bios stored in the database.
     
     Returns:
-        List of all GeneratedBio models
+        list[GeneratedBio]: All GeneratedBio models present in the agent_bios table.
     """
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM agent_bios").fetchall()

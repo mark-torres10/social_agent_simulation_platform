@@ -2,6 +2,24 @@ from db.models import BlueskyFeedPost, Like, Comment, Follow, GeneratedFeed
 
 class SocialMediaAgent:
     def __init__(self, handle: str):
+        """
+        Initialize a SocialMediaAgent with a handle and default empty profile and activity state.
+        
+        Parameters:
+            handle (str): Unique identifier for the agent (the agent's social handle).
+        
+        Attributes:
+            handle (str): The agent's handle.
+            bio (str): Visible biography text.
+            generated_bio (str): AI-generated biography text.
+            followers (int): Number of followers the agent has.
+            following (int): Number of accounts the agent follows.
+            posts_count (int): Number of posts created by the agent.
+            posts (list[BlueskyFeedPost]): Agent-created posts.
+            likes (list[Like]): Likes made by the agent.
+            comments (list[Comment]): Comments made by the agent.
+            follows (list[Follow]): Follow actions performed by the agent.
+        """
         self.handle: str = handle
         self.bio: str = ""
         self.generated_bio: str = ""
