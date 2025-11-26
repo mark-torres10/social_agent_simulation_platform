@@ -51,7 +51,10 @@ def generate_feeds(
     for agent in agents:
         # TODO: right now we load all posts per agent, but obviously
         # can optimize and personalize later to save on queries.
-        candidate_posts: list[BlueskyFeedPost] = load_candidate_posts(agent)
+        candidate_posts: list[BlueskyFeedPost] = load_candidate_posts(
+            agent=agent,
+            run_id=run_id
+        )
         feed: GeneratedFeed = generate_feed(
             agent=agent,
             candidate_posts=candidate_posts,

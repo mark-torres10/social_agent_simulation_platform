@@ -372,3 +372,24 @@ def read_all_generated_bios() -> list[GeneratedBio]:
             )
             for row in rows
         ]
+
+def load_feed_post_uris_from_current_run(
+    agent_handle: str, run_id: str
+) -> set[str]:
+    """Load the feed post URIs from the current run.
+    
+    Args:
+        agent_handle: Agent handle to look up
+        run_id: Run ID to look up
+        
+    Returns:
+        Set of feed post URIs
+    """
+    with get_connection() as conn:
+        rows = conn.execute("""
+            SELECT post_uris
+            FROM generated_feeds
+            WHERE agent_handle = ? AND run_id = ?
+            GROUP BY post_uris
+        """, (agent_handle, run_id)).fetchall()
+        return set(json.loads(row["post_uris"]) for row in rows)
