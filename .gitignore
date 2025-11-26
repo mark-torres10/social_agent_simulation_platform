@@ -11,6 +11,7 @@ downloads/
 eggs/
 .eggs/
 lib/
+!ui/lib/
 lib64/
 parts/
 sdist/
@@ -54,4 +55,5 @@ htmlcov/
 *.log
 
 # Database
-*.sqlite
+*.sqlite!ui/lib/
+!ui/lib/**
