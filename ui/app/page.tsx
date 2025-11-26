@@ -11,13 +11,13 @@ import {
   DUMMY_TURNS,
   DEFAULT_CONFIG,
 } from '@/lib/dummy-data';
-import { Run, RunConfig, Turn } from '@/types';
+import { Run, RunConfig, Turn, Agent } from '@/types';
 
 export default function Home() {
   const [runs, setRuns] = useState<Run[]>(DUMMY_RUNS);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedTurn, setSelectedTurn] = useState<number | 'summary' | null>(null);
-  const [runConfig, setRunConfig] = useState<RunConfig | null>(null);
+  const [runConfigs, setRunConfigs] = useState<Record<string, RunConfig>>({});
   const [newRunTurns, setNewRunTurns] = useState<Record<string, Record<string, Turn>>>({});
 
   const selectedRun = runs.find((r) => r.runId === selectedRunId) || null;
@@ -38,6 +38,23 @@ export default function Home() {
 
   const runAgents = getRunAgents(selectedRun);
 
+  // Get the config for the selected run
+  // For dummy runs, derive from Run data; for new runs, get from stored configs
+  const getRunConfig = (run: Run | null): RunConfig | null => {
+    if (!run) return null;
+    // Check if we have a stored config for this run
+    if (runConfigs[run.runId]) {
+      return runConfigs[run.runId];
+    }
+    // For dummy runs, derive config from Run data
+    return {
+      numAgents: run.totalAgents,
+      numTurns: run.totalTurns,
+    };
+  };
+
+  const currentRunConfig = getRunConfig(selectedRun);
+
   const handleConfigSubmit = (config: RunConfig) => {
     // Create a new run
     const now = new Date();
@@ -52,7 +69,8 @@ export default function Home() {
 
     // Add the new run to the list
     setRuns((prev) => [newRun, ...prev]);
-    setRunConfig(config);
+    // Store the config keyed by runId
+    setRunConfigs((prev) => ({ ...prev, [newRunId]: config }));
     setSelectedRunId(newRunId);
     setSelectedTurn('summary');
   };
@@ -101,7 +119,7 @@ export default function Home() {
             run={selectedRun}
             turn={currentTurn}
             turnNumber={selectedTurn}
-            config={runConfig}
+            config={currentRunConfig}
             agents={runAgents}
           />
         </>
