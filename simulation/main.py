@@ -1,5 +1,6 @@
 from ai.agents import SocialMediaAgent, record_agent_actions
 from ai.create_initial_agents import create_initial_agents
+from db.db import initialize_database
 from db.models import BlueskyFeedPost
 from feeds.feed_generator import generate_feeds
 from lib.utils import get_current_timestamp
@@ -22,9 +23,9 @@ def simulate_turn(agents: list[SocialMediaAgent], run_id: str, turn_number: int)
     for agent in agents:
         feed: list[BlueskyFeedPost] = agent_to_hydrated_feeds[agent.handle]
 
-        likes = agent.like_posts(posts=feed)
-        comments = agent.comment_posts(posts=feed)
-        follows = agent.follow_users(posts=feed)
+        likes = agent.like_posts(feed=feed)
+        comments = agent.comment_posts(feed=feed)
+        follows = agent.follow_users(feed=feed)
 
         record_agent_actions({
             "likes": likes,
@@ -51,6 +52,7 @@ def do_simulation_run(run_id: str, total_turns: int) -> None:
     print(f"Simulation run {run_id} completed in {total_turns} turns.")
 
 def main():
+    initialize_database()
     start_timestamp = get_current_timestamp()
     run_id = f"run_{start_timestamp}"
     total_turns = 10

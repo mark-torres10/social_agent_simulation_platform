@@ -17,15 +17,15 @@ class SocialMediaAgent:
         return []
 
 
-    def like_posts(self, feed: GeneratedFeed) -> list[Like]:
+    def like_posts(self, feed: list[BlueskyFeedPost]) -> list[Like]:
         return []
 
 
-    def comment_posts(self, feed: GeneratedFeed) -> list[Comment]:
+    def comment_posts(self, feed: list[BlueskyFeedPost]) -> list[Comment]:
         return []
 
     
-    def follow_users(self, feed: GeneratedFeed) -> list[Follow]:
+    def follow_users(self, feed: list[BlueskyFeedPost]) -> list[Follow]:
         return []
 
 
