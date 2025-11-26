@@ -408,6 +408,5 @@ def load_feed_post_uris_from_current_run(
             SELECT post_uris
             FROM generated_feeds
             WHERE agent_handle = ? AND run_id = ?
-            GROUP BY post_uris
         """, (agent_handle, run_id)).fetchall()
-        return set(json.loads(row["post_uris"]) for row in rows)
+        return {uri for row in rows for uri in json.loads(row["post_uris"])}
