@@ -1,13 +1,13 @@
 'use client';
 
 interface TurnHistorySidebarProps {
-  totalTurns: number;
+  availableTurns: number[];
   selectedTurn: number | 'summary' | null;
   onSelectTurn: (turn: number | 'summary') => void;
 }
 
 export default function TurnHistorySidebar({
-  totalTurns,
+  availableTurns,
   selectedTurn,
   onSelectTurn,
 }: TurnHistorySidebarProps) {
@@ -26,17 +26,17 @@ export default function TurnHistorySidebar({
         <div className="text-sm font-medium text-beige-900">Summary</div>
       </button>
       <div className="flex-1 overflow-y-auto">
-        {Array.from({ length: totalTurns }, (_, i) => (
+        {availableTurns.map((turnNumber) => (
           <button
-            key={i}
+            key={turnNumber}
             type="button"
-            onClick={() => onSelectTurn(i)}
+            onClick={() => onSelectTurn(turnNumber)}
             className={`w-full text-left p-3 border-b border-beige-200 hover:bg-beige-100 transition-colors ${
-              selectedTurn === i ? 'bg-beige-200' : ''
+              selectedTurn === turnNumber ? 'bg-beige-200' : ''
             }`}
           >
             <div className="text-sm font-medium text-beige-900">
-              Turn {i + 1}
+              Turn {turnNumber + 1}
             </div>
           </button>
         ))}

@@ -6,35 +6,35 @@ export const DUMMY_RUNS: Run[] = [
     createdAt: '2025-01-15T10:30:00',
     totalTurns: 10,
     totalAgents: 3,
-    status: 'completed',
+    status: 'completed', // Will be updated based on actual turns
   },
   {
     runId: 'run_2025-01-15T14:45:00',
     createdAt: '2025-01-15T14:45:00',
     totalTurns: 10,
     totalAgents: 4,
-    status: 'completed',
+    status: 'running', // Will be updated based on actual turns
   },
   {
     runId: 'run_2025-01-16T09:15:00',
     createdAt: '2025-01-16T09:15:00',
     totalTurns: 5,
     totalAgents: 3,
-    status: 'running',
+    status: 'running', // Will be updated based on actual turns
   },
   {
     runId: 'run_2025-01-17T08:20:00',
     createdAt: '2025-01-17T08:20:00',
     totalTurns: 15,
     totalAgents: 4,
-    status: 'completed',
+    status: 'running', // Will be updated based on actual turns
   },
   {
     runId: 'run_2025-01-18T11:00:00',
     createdAt: '2025-01-18T11:00:00',
     totalTurns: 20,
     totalAgents: 4,
-    status: 'completed',
+    status: 'running', // Will be updated based on actual turns
   },
 ];
 
@@ -302,28 +302,51 @@ function createTurnForRun(
 }
 
 export const DUMMY_TURNS: Record<string, Record<string, Turn>> = {
+  // Complete run: all 10 turns completed
   'run_2025-01-15T10:30:00': {
     '0': createTurnForRun('run_2025-01-15T10:30:00', 0, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
     '1': createTurnForRun('run_2025-01-15T10:30:00', 1, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
     '2': createTurnForRun('run_2025-01-15T10:30:00', 2, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '3': createTurnForRun('run_2025-01-15T10:30:00', 3, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '4': createTurnForRun('run_2025-01-15T10:30:00', 4, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '5': createTurnForRun('run_2025-01-15T10:30:00', 5, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '6': createTurnForRun('run_2025-01-15T10:30:00', 6, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '7': createTurnForRun('run_2025-01-15T10:30:00', 7, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '8': createTurnForRun('run_2025-01-15T10:30:00', 8, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '9': createTurnForRun('run_2025-01-15T10:30:00', 9, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
   },
+  // Incomplete run: only 3 of 10 turns completed
   'run_2025-01-15T14:45:00': {
     '0': createTurnForRun('run_2025-01-15T14:45:00', 0, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
     '1': createTurnForRun('run_2025-01-15T14:45:00', 1, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '2': createTurnForRun('run_2025-01-15T14:45:00', 2, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
   },
+  // Complete run: all 5 turns completed
   'run_2025-01-16T09:15:00': {
     '0': createTurnForRun('run_2025-01-16T09:15:00', 0, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
     '1': createTurnForRun('run_2025-01-16T09:15:00', 1, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '2': createTurnForRun('run_2025-01-16T09:15:00', 2, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '3': createTurnForRun('run_2025-01-16T09:15:00', 3, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+    '4': createTurnForRun('run_2025-01-16T09:15:00', 4, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
   },
+  // Incomplete run: only 8 of 15 turns completed
   'run_2025-01-17T08:20:00': {
     '0': createTurnForRun('run_2025-01-17T08:20:00', 0, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
     '1': createTurnForRun('run_2025-01-17T08:20:00', 1, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
     '2': createTurnForRun('run_2025-01-17T08:20:00', 2, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '3': createTurnForRun('run_2025-01-17T08:20:00', 3, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '4': createTurnForRun('run_2025-01-17T08:20:00', 4, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '5': createTurnForRun('run_2025-01-17T08:20:00', 5, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '6': createTurnForRun('run_2025-01-17T08:20:00', 6, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '7': createTurnForRun('run_2025-01-17T08:20:00', 7, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
   },
+  // Incomplete run: only 5 of 20 turns completed
   'run_2025-01-18T11:00:00': {
     '0': createTurnForRun('run_2025-01-18T11:00:00', 0, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
     '1': createTurnForRun('run_2025-01-18T11:00:00', 1, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
     '2': createTurnForRun('run_2025-01-18T11:00:00', 2, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '3': createTurnForRun('run_2025-01-18T11:00:00', 3, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '4': createTurnForRun('run_2025-01-18T11:00:00', 4, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
   },
 };
 

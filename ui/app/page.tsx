@@ -14,7 +14,14 @@ import {
 import { Run, RunConfig, Turn, Agent } from '@/types';
 
 export default function Home() {
-  const [runs, setRuns] = useState<Run[]>(DUMMY_RUNS);
+  const [runs, setRuns] = useState<Run[]>(DUMMY_RUNS.map((run) => ({
+    ...run,
+    status: (() => {
+      const turns = DUMMY_TURNS[run.runId] || {};
+      const completed = Object.keys(turns).length;
+      return completed >= run.totalTurns ? 'completed' : 'running';
+    })(),
+  })));
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [selectedTurn, setSelectedTurn] = useState<number | 'summary' | null>(null);
   const [runConfigs, setRunConfigs] = useState<Record<string, RunConfig>>({});
@@ -27,6 +34,20 @@ export default function Home() {
          DUMMY_TURNS[selectedRunId]?.[selectedTurn.toString()] || null)
       : null;
 
+  // Get available turns for a run (turns that have data)
+  const getAvailableTurns = (runId: string | null): number[] => {
+    if (!runId) return [];
+    const turns = newRunTurns[runId] || DUMMY_TURNS[runId] || {};
+    return Object.keys(turns)
+      .map(Number)
+      .sort((a, b) => a - b);
+  };
+
+  // Get completed turns count for a run
+  const getCompletedTurnsCount = (runId: string | null): number => {
+    return getAvailableTurns(runId).length;
+  };
+
   // Get agents for the selected run
   // For dummy data, use first N agents based on run.totalAgents
   // In a real implementation, this would fetch agents from the run data
@@ -37,6 +58,8 @@ export default function Home() {
   };
 
   const runAgents = getRunAgents(selectedRun);
+  const availableTurns = getAvailableTurns(selectedRunId);
+  const completedTurnsCount = getCompletedTurnsCount(selectedRunId);
 
   // Get the config for the selected run
   // For dummy runs, derive from Run data; for new runs, get from stored configs
@@ -54,6 +77,19 @@ export default function Home() {
   };
 
   const currentRunConfig = getRunConfig(selectedRun);
+
+  // Update run status based on completed vs total turns
+  const getRunStatus = (run: Run | null): 'running' | 'completed' | 'failed' => {
+    if (!run) return 'running';
+    const completed = getCompletedTurnsCount(run.runId);
+    return completed >= run.totalTurns ? 'completed' : 'running';
+  };
+
+  // Update runs with computed status (memoized computation)
+  const runsWithStatus = runs.map((run) => ({
+    ...run,
+    status: getRunStatus(run),
+  }));
 
   const handleConfigSubmit = (config: RunConfig) => {
     // Create a new run
@@ -96,7 +132,7 @@ export default function Home() {
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Left 1/4: Run History Sidebar */}
       <RunHistorySidebar
-        runs={runs}
+        runs={runsWithStatus}
         selectedRunId={selectedRunId}
         onSelectRun={handleSelectRun}
         onStartNewRun={handleStartNewRun}
@@ -109,18 +145,19 @@ export default function Home() {
         <>
           {/* Second 1/4: Turn History Sidebar (when run is active) */}
           <TurnHistorySidebar
-            totalTurns={selectedRun?.totalTurns || 0}
+            availableTurns={availableTurns}
             selectedTurn={selectedTurn}
             onSelectTurn={handleSelectTurn}
           />
 
           {/* Right 2/4: Details Panel */}
           <DetailsPanel
-            run={selectedRun}
+            run={selectedRun ? { ...selectedRun, status: getRunStatus(selectedRun) } : null}
             turn={currentTurn}
             turnNumber={selectedTurn}
             config={currentRunConfig}
             agents={runAgents}
+            completedTurns={completedTurnsCount}
           />
         </>
       )}

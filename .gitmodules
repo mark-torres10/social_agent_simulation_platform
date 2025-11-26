@@ -1,0 +1,3 @@
+[submodule "ai_tools"]
+	path = ai_tools
+	url = https://github.com/mark-torres10/ai_tools.git

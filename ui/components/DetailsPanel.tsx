@@ -11,6 +11,7 @@ interface DetailsPanelProps {
   turnNumber: number | 'summary' | null;
   config: RunConfig | null;
   agents: Agent[];
+  completedTurns: number;
 }
 
 export default function DetailsPanel({
@@ -19,6 +20,7 @@ export default function DetailsPanel({
   turnNumber,
   config,
   agents,
+  completedTurns,
 }: DetailsPanelProps) {
   if (!run) {
     return (
@@ -29,7 +31,7 @@ export default function DetailsPanel({
   }
 
   if (turnNumber === 'summary' || turnNumber === null) {
-    return <RunSummary run={run} agents={agents} />;
+    return <RunSummary run={run} agents={agents} completedTurns={completedTurns} />;
   }
 
   if (!turn) {

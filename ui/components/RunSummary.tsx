@@ -5,9 +5,10 @@ import { Run, Agent } from '@/types';
 interface RunSummaryProps {
   run: Run;
   agents: Agent[];
+  completedTurns: number;
 }
 
-export default function RunSummary({ run, agents }: RunSummaryProps) {
+export default function RunSummary({ run, agents, completedTurns }: RunSummaryProps) {
   return (
     <div className="p-6 space-y-6">
       <h2 className="text-xl font-semibold text-beige-900">Run Summary</h2>
@@ -31,9 +32,9 @@ export default function RunSummary({ run, agents }: RunSummaryProps) {
               </td>
             </tr>
             <tr>
-              <td className="px-4 py-3 text-sm text-beige-800">Total Turns</td>
+              <td className="px-4 py-3 text-sm text-beige-800">Completed Turns</td>
               <td className="px-4 py-3 text-sm text-beige-900">
-                {run.totalTurns}
+                {completedTurns} / {run.totalTurns}
               </td>
             </tr>
             <tr>
