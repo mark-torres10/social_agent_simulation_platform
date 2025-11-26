@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf9f7;
+  --foreground: #2c2416;
+  --beige-50: #faf9f7;
+  --beige-100: #f5f3ef;
+  --beige-200: #ebe8e0;
+  --beige-300: #dcd8cd;
+  --beige-400: #c9c3b5;
+  --beige-500: #b3ab9a;
+  --beige-600: #9c9380;
+  --beige-700: #7d7566;
+  --beige-800: #5f574c;
+  --beige-900: #3d3730;
+  --accent: #d4a574;
+  --accent-hover: #c19564;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-beige-50: var(--beige-50);
+  --color-beige-100: var(--beige-100);
+  --color-beige-200: var(--beige-200);
+  --color-beige-300: var(--beige-300);
+  --color-beige-400: var(--beige-400);
+  --color-beige-500: var(--beige-500);
+  --color-beige-600: var(--beige-600);
+  --color-beige-700: var(--beige-700);
+  --color-beige-800: var(--beige-800);
+  --color-beige-900: var(--beige-900);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
