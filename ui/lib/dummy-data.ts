@@ -242,7 +242,14 @@ function createTurnForRun(
   agents: Agent[],
   allPosts: Post[],
 ): Turn {
-  const selectedAgents = agents.slice(0, Math.min(agents.length, 5));
+  // Rotate agent selection based on turnNumber to give different agents turns
+  const startOffset = turnNumber % agents.length;
+  const numAgents = Math.min(agents.length, 5);
+  const selectedAgents: Agent[] = [];
+  for (let i = 0; i < numAgents; i++) {
+    const idx = (startOffset + i) % agents.length;
+    selectedAgents.push(agents[idx]);
+  }
   const agentFeeds: Record<string, Feed> = {};
   const agentActions: Record<string, AgentAction[]> = {};
 
@@ -307,6 +314,16 @@ export const DUMMY_TURNS: Record<string, Record<string, Turn>> = {
   'run_2025-01-16T09:15:00': {
     '0': createTurnForRun('run_2025-01-16T09:15:00', 0, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
     '1': createTurnForRun('run_2025-01-16T09:15:00', 1, DUMMY_AGENTS.slice(0, 3), DUMMY_POSTS),
+  },
+  'run_2025-01-17T08:20:00': {
+    '0': createTurnForRun('run_2025-01-17T08:20:00', 0, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '1': createTurnForRun('run_2025-01-17T08:20:00', 1, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '2': createTurnForRun('run_2025-01-17T08:20:00', 2, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+  },
+  'run_2025-01-18T11:00:00': {
+    '0': createTurnForRun('run_2025-01-18T11:00:00', 0, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '1': createTurnForRun('run_2025-01-18T11:00:00', 1, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
+    '2': createTurnForRun('run_2025-01-18T11:00:00', 2, DUMMY_AGENTS.slice(0, 4), DUMMY_POSTS),
   },
 };
 

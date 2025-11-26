@@ -17,6 +17,7 @@ export default function TurnHistorySidebar({
         <h2 className="text-sm font-medium text-beige-900">Run Summary</h2>
       </div>
       <button
+        type="button"
         onClick={() => onSelectTurn('summary')}
         className={`w-full text-left p-3 border-b border-beige-200 hover:bg-beige-100 transition-colors ${
           selectedTurn === 'summary' ? 'bg-beige-200' : ''
@@ -28,6 +29,7 @@ export default function TurnHistorySidebar({
         {Array.from({ length: totalTurns }, (_, i) => (
           <button
             key={i}
+            type="button"
             onClick={() => onSelectTurn(i)}
             className={`w-full text-left p-3 border-b border-beige-200 hover:bg-beige-100 transition-colors ${
               selectedTurn === i ? 'bg-beige-200' : ''
