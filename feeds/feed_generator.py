@@ -72,6 +72,13 @@ def generate_feeds(
     uri_to_post = {p.uri: p for p in all_posts}
     agent_to_hydrated_feeds: dict[str, list[BlueskyFeedPost]] = {}
     for agent_handle, feed in feeds.items():
-        # using [] instead of get() to raise an error if the post is not found.
-        agent_to_hydrated_feeds[agent_handle] = [uri_to_post[post_uri] for post_uri in feed.post_uris]
+        hydrated_posts = []
+        for idx, post_uri in enumerate(feed.post_uris):
+            if post_uri not in uri_to_post:
+                raise ValueError(
+                    f"Missing post URI in feed: agent_handle={agent_handle}, "
+                    f"feed_id={feed.feed_id}, post_index={idx}, missing_uri={post_uri}"
+                )
+            hydrated_posts.append(uri_to_post[post_uri])
+        agent_to_hydrated_feeds[agent_handle] = hydrated_posts
     return agent_to_hydrated_feeds

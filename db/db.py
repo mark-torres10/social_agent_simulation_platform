@@ -63,7 +63,19 @@ def initialize_database() -> None:
                 created_at TEXT NOT NULL
             )
         """)
-        
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS generated_feeds (
+                feed_id TEXT NOT NULL,
+                run_id TEXT NOT NULL,
+                turn_number INTEGER NOT NULL,
+                agent_handle TEXT NOT NULL,
+                post_uris TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (agent_handle, run_id, turn_number)
+            )
+        """)
+
         conn.commit()
 
 
@@ -187,13 +199,19 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
         ))
         conn.commit()
 
-def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Optional[GeneratedFeed]:
-    """Read a generated feed by feed ID.
+def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
+    """Read a generated feed by agent_handle, run_id, and turn_number.
     
     Args:
         agent_handle: Agent handle to look up
         run_id: Run ID to look up
         turn_number: Turn number to look up
+    
+    Returns:
+        GeneratedFeed model for the specified agent, run, and turn
+        
+    Raises:
+        ValueError: If no feed is found for the given agent_handle, run_id, and turn_number
     """
     with get_connection() as conn:
         row = conn.execute(

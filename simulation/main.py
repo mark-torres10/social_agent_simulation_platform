@@ -22,9 +22,9 @@ def simulate_turn(agents: list[SocialMediaAgent], run_id: str, turn_number: int)
     for agent in agents:
         feed: list[BlueskyFeedPost] = agent_to_hydrated_feeds[agent.handle]
 
-        likes = agent.like_posts(feed)
-        comments = agent.comment_posts(feed)
-        follows = agent.follow_users(feed)
+        likes = agent.like_posts(posts=feed)
+        comments = agent.comment_posts(posts=feed)
+        follows = agent.follow_users(posts=feed)
 
         record_agent_actions({
             "likes": likes,
@@ -40,7 +40,7 @@ def simulate_turn(agents: list[SocialMediaAgent], run_id: str, turn_number: int)
 
 def do_simulation_run(run_id: str, total_turns: int) -> None:
     agents: list[SocialMediaAgent] = create_initial_agents()
-    for i in range(10):
+    for i in range(total_turns):
         print(f"Turn {i}")
         total_actions = simulate_turn(
             agents=agents,
