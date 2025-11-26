@@ -57,9 +57,11 @@ class GeneratedBio(BaseModel):
 class GeneratedFeed(BaseModel):
     """A feed generated for an AI agent."""
     feed_id: str
+    run_id: str
+    turn_number: int
     agent_handle: str
+    post_uris: list[str]
     created_at: str
-    items: list[BlueskyFeedPost]
 
     @classmethod
     def generate_feed_id(cls) -> str:

@@ -4,11 +4,12 @@ Provides read/write operations for Bluesky profiles and feed posts
 using SQLite.
 """
 
+import json
 import os
 import sqlite3
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
@@ -160,6 +161,58 @@ def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
             VALUES (?, ?, ?)
         """, (handle, generated_bio, get_current_timestamp()))
         conn.commit()
+
+
+# TODO: we create a feed_id even though the PK for now is
+# agent_handle, run_id, turn_number because maybe at some point we'll have
+# multiple feeds per agent per run.
+def write_generated_feed(feed: GeneratedFeed) -> None:
+    """Write a generated feed to the database.
+    
+    Args:
+        feed: GeneratedFeed model to write
+    """
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO generated_feeds
+            (feed_id, run_id, turn_number, agent_handle, post_uris, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            feed.feed_id,
+            feed.run_id,
+            feed.turn_number,
+            feed.agent_handle,
+            json.dumps(feed.post_uris),
+            feed.created_at,
+        ))
+        conn.commit()
+
+def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Optional[GeneratedFeed]:
+    """Read a generated feed by feed ID.
+    
+    Args:
+        agent_handle: Agent handle to look up
+        run_id: Run ID to look up
+        turn_number: Turn number to look up
+    """
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM generated_feeds WHERE agent_handle = ? AND run_id = ? AND turn_number = ?",
+            (agent_handle, run_id, turn_number)
+        ).fetchone()
+        
+        if row is None:
+            # this isn't supposed to happen, so we want to raise an error if it does.
+            raise ValueError(f"Generated feed not found for agent {agent_handle}, run {run_id}, turn {turn_number}")
+        
+        return GeneratedFeed(
+            feed_id=row["feed_id"],
+            run_id=row["run_id"],
+            turn_number=row["turn_number"],
+            agent_handle=row["agent_handle"],
+            post_uris=json.loads(row["post_uris"]),
+            created_at=row["created_at"],
+        )
 
 def read_profile(handle: str) -> Optional[BlueskyProfile]:
     """Read a Bluesky profile by handle.
