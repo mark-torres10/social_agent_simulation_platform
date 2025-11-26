@@ -26,5 +26,11 @@
 - [x] Fix ui/app/page.tsx: Store run configurations keyed by runId to prevent stale configs when switching runs
 - [x] Fix ui/app/page.tsx: Add missing Agent import to type imports
 - [x] Test fixes with browser tool
+- [x] Commit and push changes
+
+## Final Fix - Agent Count Alignment
+
+- [x] Fix ui/lib/dummy-data.ts: Align DUMMY_RUNS.totalAgents with actual agent slices used in DUMMY_TURNS (3, 4, 3, 4, 4)
+- [x] Test fix with browser tool
 - [ ] Commit and push changes
 

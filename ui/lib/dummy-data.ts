@@ -5,14 +5,14 @@ export const DUMMY_RUNS: Run[] = [
     runId: 'run_2025-01-15T10:30:00',
     createdAt: '2025-01-15T10:30:00',
     totalTurns: 10,
-    totalAgents: 5,
+    totalAgents: 3,
     status: 'completed',
   },
   {
     runId: 'run_2025-01-15T14:45:00',
     createdAt: '2025-01-15T14:45:00',
     totalTurns: 10,
-    totalAgents: 7,
+    totalAgents: 4,
     status: 'completed',
   },
   {
@@ -26,14 +26,14 @@ export const DUMMY_RUNS: Run[] = [
     runId: 'run_2025-01-17T08:20:00',
     createdAt: '2025-01-17T08:20:00',
     totalTurns: 15,
-    totalAgents: 8,
+    totalAgents: 4,
     status: 'completed',
   },
   {
     runId: 'run_2025-01-18T11:00:00',
     createdAt: '2025-01-18T11:00:00',
     totalTurns: 20,
-    totalAgents: 10,
+    totalAgents: 4,
     status: 'completed',
   },
 ];
