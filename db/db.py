@@ -391,6 +391,28 @@ def read_all_generated_bios() -> list[GeneratedBio]:
             for row in rows
         ]
 
+
+def read_all_generated_feeds() -> list[GeneratedFeed]:
+    """Read all generated feeds from the database.
+    
+    Returns:
+        List of all GeneratedFeed models
+    """
+    with get_connection() as conn:
+        rows = conn.execute("SELECT * FROM generated_feeds").fetchall()
+        return [
+            GeneratedFeed(
+                feed_id=row["feed_id"],
+                run_id=row["run_id"],
+                turn_number=row["turn_number"],
+                agent_handle=row["agent_handle"],
+                post_uris=json.loads(row["post_uris"]),
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+
 def load_feed_post_uris_from_current_run(
     agent_handle: str, run_id: str
 ) -> set[str]:
