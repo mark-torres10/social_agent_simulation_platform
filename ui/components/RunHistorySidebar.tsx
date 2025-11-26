@@ -20,6 +20,7 @@ export default function RunHistorySidebar({
       <div className="p-4 border-b border-beige-300">
         <h2 className="text-sm font-medium text-beige-900 mb-3">Run History</h2>
         <button
+          type="button"
           onClick={onStartNewRun}
           className="w-full px-3 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-hover transition-colors"
         >
@@ -30,6 +31,7 @@ export default function RunHistorySidebar({
         {runs.map((run) => (
           <button
             key={run.runId}
+            type="button"
             onClick={() => onSelectRun(run.runId)}
             className={`w-full text-left p-3 border-b border-beige-200 hover:bg-beige-100 transition-colors ${
               selectedRunId === run.runId ? 'bg-beige-200' : ''

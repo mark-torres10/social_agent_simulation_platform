@@ -27,6 +27,17 @@ export default function Home() {
          DUMMY_TURNS[selectedRunId]?.[selectedTurn.toString()] || null)
       : null;
 
+  // Get agents for the selected run
+  // For dummy data, use first N agents based on run.totalAgents
+  // In a real implementation, this would fetch agents from the run data
+  const getRunAgents = (run: Run | null): Agent[] => {
+    if (!run) return DUMMY_AGENTS;
+    // Use first N agents based on totalAgents count
+    return DUMMY_AGENTS.slice(0, Math.min(run.totalAgents, DUMMY_AGENTS.length));
+  };
+
+  const runAgents = getRunAgents(selectedRun);
+
   const handleConfigSubmit = (config: RunConfig) => {
     // Create a new run
     const now = new Date();
@@ -91,7 +102,7 @@ export default function Home() {
             turn={currentTurn}
             turnNumber={selectedTurn}
             config={runConfig}
-            agents={DUMMY_AGENTS}
+            agents={runAgents}
           />
         </>
       )}

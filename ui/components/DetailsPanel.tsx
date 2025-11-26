@@ -44,6 +44,15 @@ export default function DetailsPanel({
     .flatMap((feed) => feed.postUris.map((uri) => getPostByUri(uri)))
     .filter((p): p is Post => p !== undefined);
 
+  // Filter agents to only those participating in this turn
+  const participatingAgentHandles = new Set([
+    ...Object.keys(turn.agentFeeds),
+    ...Object.keys(turn.agentActions),
+  ]);
+  const participatingAgents = agents.filter((agent) =>
+    participatingAgentHandles.has(agent.handle)
+  );
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Run Parameters */}
@@ -61,7 +70,7 @@ export default function DetailsPanel({
       <div className="flex-1 overflow-y-auto p-6">
         <h3 className="text-lg font-medium text-beige-900 mb-4">Agents</h3>
         <div className="space-y-4">
-          {agents.map((agent) => {
+          {participatingAgents.map((agent) => {
             const feed = turn.agentFeeds[agent.handle];
             const feedPosts = feed
               ? feed.postUris.map((uri) => getPostByUri(uri)).filter((p): p is Post => p !== undefined)

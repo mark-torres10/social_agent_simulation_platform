@@ -46,6 +46,7 @@ export default function AgentDetail({
       {/* Metadata Section */}
       <div>
         <button
+          type="button"
           onClick={() => toggleSection('metadata')}
           className="w-full text-left flex items-center justify-between p-2 hover:bg-beige-100 rounded transition-colors"
         >
@@ -87,6 +88,7 @@ export default function AgentDetail({
       {/* Feed Section */}
       <div>
         <button
+          type="button"
           onClick={() => toggleSection('feed')}
           className="w-full text-left flex items-center justify-between p-2 hover:bg-beige-100 rounded transition-colors"
         >
@@ -107,6 +109,7 @@ export default function AgentDetail({
       {/* Liked Posts Section */}
       <div>
         <button
+          type="button"
           onClick={() => toggleSection('likes')}
           className="w-full text-left flex items-center justify-between p-2 hover:bg-beige-100 rounded transition-colors"
         >
@@ -131,6 +134,7 @@ export default function AgentDetail({
       {/* Comments Section */}
       <div>
         <button
+          type="button"
           onClick={() => toggleSection('comments')}
           className="w-full text-left flex items-center justify-between p-2 hover:bg-beige-100 rounded transition-colors"
         >
