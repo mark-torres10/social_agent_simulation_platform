@@ -531,8 +531,8 @@ def _row_to_run(row: sqlite3.Row) -> Run:
     # Convert status string to RunStatus enum, handling invalid values
     try:
         status = RunStatus(row["status"])
-    except ValueError:
-        raise ValueError(f"Invalid status value: {row['status']}. Must be one of: {[s.value for s in RunStatus]}")
+    except ValueError as err:
+        raise ValueError(f"Invalid status value: {row['status']}. Must be one of: {[s.value for s in RunStatus]}") from err
     
     return Run(
         run_id=row["run_id"],
