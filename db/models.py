@@ -1,3 +1,4 @@
+from enum import Enum
 import uuid
 from pydantic import BaseModel
 
@@ -66,3 +67,23 @@ class GeneratedFeed(BaseModel):
     @classmethod
     def generate_feed_id(cls) -> str:
         return f"feed_{str(uuid.uuid4())}"
+
+
+class RunConfig(BaseModel):
+    """Configuration for a simulation run."""
+    num_agents: int
+    num_turns: int
+
+class RunStatus(str, Enum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+class Run(BaseModel):
+    run_id: str
+    created_at: str
+    total_turns: int
+    total_agents: int
+    started_at: str
+    status: RunStatus
+    completed_at: str | None = None
