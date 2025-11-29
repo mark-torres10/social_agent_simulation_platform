@@ -93,12 +93,12 @@ class SQLiteFeedPostRepository(FeedPostRepository):
             The created or updated BlueskyFeedPost object
             
         Raises:
-            ValueError: If post.uri is empty
+            ValueError: If uri is empty
             sqlite3.IntegrityError: If uri violates constraints (from adapter)
             sqlite3.OperationalError: If database operation fails (from adapter)
         """
         if not post.uri or not post.uri.strip():
-            raise ValueError("post.uri cannot be empty")
+            raise ValueError("uri cannot be empty")
         
         self._db_adapter.write_feed_post(post)
         return post
@@ -107,20 +107,25 @@ class SQLiteFeedPostRepository(FeedPostRepository):
         """Create or update multiple feed posts in SQLite (batch operation).
         
         Args:
-            posts: List of BlueskyFeedPost models to create or update
+            posts: List of BlueskyFeedPost models to create or update.
+                   None is not allowed. Empty list is allowed and will result
+                   in no database operations.
             
         Returns:
             List of created or updated BlueskyFeedPost objects
             
         Raises:
-            ValueError: If any post.uri is empty
+            ValueError: If posts is None or if any uri is empty
             sqlite3.IntegrityError: If any uri violates constraints (from adapter)
             sqlite3.OperationalError: If database operation fails (from adapter)
         """
-        # Validate all URIs before writing
+        if posts is None:
+            raise ValueError("posts cannot be None")
+        
+        # Validate all URIs before writing (fails on first invalid URI)
         for post in posts:
             if not post.uri or not post.uri.strip():
-                raise ValueError("post.uri cannot be empty")
+                raise ValueError("uri cannot be empty")
         
         self._db_adapter.write_feed_posts(posts)
         return posts
