@@ -124,8 +124,8 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         
         mock_adapter.write_profile.assert_not_called()
     
-    def test_raises_runtime_error_when_write_fails(self):
-        """Test that create_or_update_profile raises RuntimeError when database write fails."""
+    def test_propagates_adapter_exception_when_write_fails(self):
+        """Test that create_or_update_profile propagates adapter exceptions when database write fails."""
         # Arrange
         mock_adapter = Mock(spec=ProfileDatabaseAdapter)
         mock_adapter.write_profile.side_effect = Exception("Database error")
@@ -141,18 +141,18 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         )
         
         # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(Exception) as exc_info:
             repo.create_or_update_profile(profile)
         
-        assert "Failed to create/update profile" in str(exc_info.value)
-        assert "test.bsky.social" in str(exc_info.value)
         assert "Database error" in str(exc_info.value)
+        assert exc_info.value is mock_adapter.write_profile.side_effect
     
-    def test_raises_runtime_error_with_correct_profile_handle_in_message(self):
-        """Test that RuntimeError includes the correct profile handle in the error message."""
+    def test_propagates_adapter_exception_directly(self):
+        """Test that create_or_update_profile propagates adapter exceptions directly."""
         # Arrange
         mock_adapter = Mock(spec=ProfileDatabaseAdapter)
-        mock_adapter.write_profile.side_effect = Exception("DB error")
+        db_error = Exception("DB error")
+        mock_adapter.write_profile.side_effect = db_error
         repo = SQLiteProfileRepository(mock_adapter)
         profile = BlueskyProfile(
             handle="specific.bsky.social",
@@ -165,13 +165,14 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         )
         
         # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(Exception) as exc_info:
             repo.create_or_update_profile(profile)
         
-        assert exc_info.value.args[0] == "Failed to create/update profile 'specific.bsky.social': DB error"
+        assert exc_info.value is db_error
+        assert "DB error" in str(exc_info.value)
     
-    def test_preserves_original_exception_in_runtime_error(self):
-        """Test that the original exception is preserved as the cause of RuntimeError."""
+    def test_propagates_original_exception_directly(self):
+        """Test that create_or_update_profile propagates the original exception directly."""
         # Arrange
         mock_adapter = Mock(spec=ProfileDatabaseAdapter)
         original_error = ValueError("Invalid data")
@@ -188,10 +189,11 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         )
         
         # Act & Assert
-        with pytest.raises(RuntimeError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             repo.create_or_update_profile(profile)
         
-        assert exc_info.value.__cause__ is original_error
+        assert exc_info.value is original_error
+        assert "Invalid data" in str(exc_info.value)
 
 
 class TestSQLiteProfileRepositoryGetProfile:

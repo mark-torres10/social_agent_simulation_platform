@@ -70,17 +70,13 @@ class SQLiteProfileRepository(ProfileRepository):
             
         Raises:
             ValueError: If profile.handle is empty
-            RuntimeError: If the profile cannot be created/updated due to a database error
+            sqlite3.IntegrityError: If handle violates constraints (from adapter)
+            sqlite3.OperationalError: If database operation fails (from adapter)
         """
         if not profile.handle or not profile.handle.strip():
             raise ValueError("profile.handle cannot be empty")
         
-        try:
-            self._db_adapter.write_profile(profile)
-        except Exception as e:
-            raise RuntimeError(
-                f"Failed to create/update profile '{profile.handle}': {e}"
-            ) from e
+        self._db_adapter.write_profile(profile)
         return profile
     
     def get_profile(self, handle: str) -> Optional[BlueskyProfile]:
