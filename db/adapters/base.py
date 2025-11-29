@@ -1,8 +1,9 @@
-"""Database adapter interfaces for dependency injection."""
+"""Base adapter interfaces."""
 
 from abc import ABC, abstractmethod
 from typing import Optional
-from db.models import Run
+
+from db.models import BlueskyProfile, Run
 
 
 class RunDatabaseAdapter(ABC):
@@ -81,55 +82,60 @@ class RunDatabaseAdapter(ABC):
         raise NotImplementedError
 
 
-class SQLiteRunAdapter(RunDatabaseAdapter):
-    """SQLite implementation of RunDatabaseAdapter.
+class ProfileDatabaseAdapter(ABC):
+    """Abstract interface for profile database operations.
     
-    Uses functions from db.db module to interact with SQLite database.
-    
-    This implementation raises SQLite-specific exceptions. See method docstrings
-    for details on specific exception types.
+    This interface is database-agnostic. Currently works with BlueskyProfile.
+    Concrete implementations should document the specific exceptions they raise,
+    which may be database-specific.
     """
     
-    def write_run(self, run: Run) -> None:
-        """Write a run to SQLite.
+    @abstractmethod
+    def write_profile(self, profile: BlueskyProfile) -> None:
+        """Write a profile to the database.
         
+        Args:
+            profile: BlueskyProfile model to write
+            
         Raises:
-            sqlite3.IntegrityError: If run_id violates constraints
-            sqlite3.OperationalError: If database operation fails
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
         """
-        from db.db import write_run
-        write_run(run)
+        raise NotImplementedError
     
-    def read_run(self, run_id: str) -> Optional[Run]:
-        """Read a run from SQLite.
+    @abstractmethod
+    def read_profile(self, handle: str) -> Optional[BlueskyProfile]:
+        """Read a profile by handle.
         
+        Args:
+            handle: Profile handle to look up
+            
+        Returns:
+            BlueskyProfile model if found, None otherwise.
+            
         Raises:
-            ValueError: If the run data is invalid (NULL fields, invalid status)
-            sqlite3.OperationalError: If database operation fails
+            ValueError: If the profile data is invalid (NULL fields)
             KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
         """
-        from db.db import read_run
-        return read_run(run_id)
+        raise NotImplementedError
     
-    def read_all_runs(self) -> list[Run]:
-        """Read all runs from SQLite.
+    @abstractmethod
+    def read_all_profiles(self) -> list[BlueskyProfile]:
+        """Read all profiles.
         
+        Returns:
+            List of BlueskyProfile models. Returns empty list if no profiles exist.
+            
         Raises:
-            ValueError: If any run data is invalid (NULL fields, invalid status)
-            sqlite3.OperationalError: If database operation fails
+            ValueError: If any profile data is invalid (NULL fields)
             KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
         """
-        from db.db import read_all_runs
-        return read_all_runs()
-    
-    def update_run_status(self, run_id: str, status: str, completed_at: Optional[str] = None) -> None:
-        """Update run status in SQLite.
-        
-        Raises:
-            RunNotFoundError: If no run exists with the given run_id
-            sqlite3.OperationalError: If database operation fails
-            sqlite3.IntegrityError: If status value violates CHECK constraints
-        """
-        from db.db import update_run_status
-        update_run_status(run_id, status, completed_at)
+        raise NotImplementedError
 

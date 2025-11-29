@@ -5,7 +5,7 @@ from typing import Optional, Callable
 import uuid
 
 from db.models import RunConfig, Run, RunStatus
-from db.adapters import RunDatabaseAdapter
+from db.adapters.base import RunDatabaseAdapter
 from db.exceptions import (
     RunNotFoundError,
     InvalidTransitionError,
@@ -176,7 +176,7 @@ def create_sqlite_repository() -> SQLiteRunRepository:
     Returns:
         SQLiteRunRepository configured with SQLite adapter and default timestamp function
     """
-    from db.adapters import SQLiteRunAdapter
+    from db.adapters.sqlite import SQLiteRunAdapter
     from lib.utils import get_current_timestamp
     return SQLiteRunRepository(
         db_adapter=SQLiteRunAdapter(),

@@ -109,6 +109,10 @@ def write_profile(profile: BlueskyProfile) -> None:
     
     Args:
         profile: BlueskyProfile model to write
+        
+    Raises:
+        sqlite3.IntegrityError: If handle violates constraints
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         conn.execute("""
@@ -304,6 +308,11 @@ def read_profile(handle: str) -> Optional[BlueskyProfile]:
         
     Returns:
         BlueskyProfile if found, None otherwise
+        
+    Raises:
+        ValueError: If the profile data is invalid (NULL fields)
+        KeyError: If required columns are missing from the database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         row = conn.execute(
@@ -313,6 +322,22 @@ def read_profile(handle: str) -> Optional[BlueskyProfile]:
         
         if row is None:
             return None
+        
+        # Validate required fields are not NULL
+        if row["handle"] is None:
+            raise ValueError("handle cannot be NULL")
+        if row["did"] is None:
+            raise ValueError("did cannot be NULL")
+        if row["display_name"] is None:
+            raise ValueError("display_name cannot be NULL")
+        if row["bio"] is None:
+            raise ValueError("bio cannot be NULL")
+        if row["followers_count"] is None:
+            raise ValueError("followers_count cannot be NULL")
+        if row["follows_count"] is None:
+            raise ValueError("follows_count cannot be NULL")
+        if row["posts_count"] is None:
+            raise ValueError("posts_count cannot be NULL")
         
         return BlueskyProfile(
             handle=row["handle"],
@@ -329,13 +354,35 @@ def read_all_profiles() -> list[BlueskyProfile]:
     """Read all Bluesky profiles from the database.
     
     Returns:
-        List of all BlueskyProfile models
+        List of all BlueskyProfile models. Returns empty list if no profiles exist.
+        
+    Raises:
+        ValueError: If any profile data is invalid (NULL fields)
+        KeyError: If required columns are missing from any database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM bluesky_profiles").fetchall()
         
-        return [
-            BlueskyProfile(
+        profiles = []
+        for row in rows:
+            # Validate required fields are not NULL
+            if row["handle"] is None:
+                raise ValueError("handle cannot be NULL")
+            if row["did"] is None:
+                raise ValueError("did cannot be NULL")
+            if row["display_name"] is None:
+                raise ValueError("display_name cannot be NULL")
+            if row["bio"] is None:
+                raise ValueError("bio cannot be NULL")
+            if row["followers_count"] is None:
+                raise ValueError("followers_count cannot be NULL")
+            if row["follows_count"] is None:
+                raise ValueError("follows_count cannot be NULL")
+            if row["posts_count"] is None:
+                raise ValueError("posts_count cannot be NULL")
+            
+            profiles.append(BlueskyProfile(
                 handle=row["handle"],
                 did=row["did"],
                 display_name=row["display_name"],
@@ -343,9 +390,9 @@ def read_all_profiles() -> list[BlueskyProfile]:
                 followers_count=row["followers_count"],
                 follows_count=row["follows_count"],
                 posts_count=row["posts_count"],
-            )
-            for row in rows
-        ]
+            ))
+        
+        return profiles
 
 
 def read_feed_post(uri: str) -> Optional[BlueskyFeedPost]:
