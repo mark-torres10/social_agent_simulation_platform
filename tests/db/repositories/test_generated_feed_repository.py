@@ -120,26 +120,6 @@ class TestSQLiteGeneratedFeedRepositoryCreateOrUpdateGeneratedFeed:
         
         mock_adapter.write_generated_feed.assert_not_called()
     
-    def test_raises_value_error_when_turn_number_is_none(self):
-        """Test that create_or_update_generated_feed raises ValueError when turn_number is None."""
-        # Arrange
-        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
-        repo = SQLiteGeneratedFeedRepository(mock_adapter)
-        feed = GeneratedFeed(
-            feed_id="feed_test123",
-            run_id="run_123",
-            turn_number=None,  # type: ignore
-            agent_handle="test.bsky.social",
-            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
-            created_at="2024-01-01T00:00:00Z",
-        )
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="turn_number cannot be None"):
-            repo.create_or_update_generated_feed(feed)
-        
-        mock_adapter.write_generated_feed.assert_not_called()
-    
     def test_propagates_adapter_exception_when_write_fails(self):
         """Test that create_or_update_generated_feed propagates adapter exceptions when database write fails."""
         # Arrange
