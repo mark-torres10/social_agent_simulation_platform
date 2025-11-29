@@ -422,11 +422,11 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                 repo.update_run_status(run_id, status)
                 
                 # Assert
-                # Note: status is passed as RunStatus enum, which will be converted to string by db function
+                # Verify that status enum is converted to string value
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0]
                 assert call_args[0] == run_id
-                assert call_args[1] == status  # Enum is passed directly
+                assert call_args[1] == status.value  # Enum value (string) is passed
                 assert call_args[2] == expected_timestamp
     
     def test_updates_status_to_failed_without_completed_at(self):
@@ -442,7 +442,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                 repo.update_run_status(run_id, status)
                 
                 # Assert
-                mock_update.assert_called_once_with(run_id, status, None)
+                mock_update.assert_called_once_with(run_id, status.value, None)
     
     def test_updates_status_to_running_without_completed_at(self):
         """Test that update_run_status sets completed_at to None for RUNNING status."""
@@ -457,7 +457,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                 repo.update_run_status(run_id, status)
                 
                 # Assert
-                mock_update.assert_called_once_with(run_id, status, None)
+                mock_update.assert_called_once_with(run_id, status.value, None)
     
     def test_calls_update_run_status_with_correct_parameters_for_completed(self):
         """Test that update_run_status calls db function with correct parameters for COMPLETED."""
@@ -476,7 +476,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0]
                 assert call_args[0] == run_id
-                assert call_args[1] == status  # RunStatus enum is passed
+                assert call_args[1] == status.value  # Enum value (string) is passed
                 assert call_args[2] == expected_timestamp
     
     def test_calls_update_run_status_with_correct_parameters_for_failed(self):
@@ -495,7 +495,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                 mock_update.assert_called_once()
                 call_args = mock_update.call_args[0]
                 assert call_args[0] == run_id
-                assert call_args[1] == status
+                assert call_args[1] == status.value  # Enum value (string) is passed
                 assert call_args[2] is None
     
     def test_uses_current_timestamp_for_completed_status(self):
@@ -513,7 +513,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                 repo.update_run_status(run_id, status)
                 
                 # Assert
-                mock_update.assert_called_once_with(run_id, status, timestamp1)
+                mock_update.assert_called_once_with(run_id, status.value, timestamp1)
     
     def test_handles_all_run_status_values(self):
         """Test that update_run_status handles all RunStatus enum values correctly."""
@@ -529,6 +529,6 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
                     
                     # Assert
                     expected_completed_at = "2024_01_01-13:00:00" if status == RunStatus.COMPLETED else None
-                    mock_update.assert_called_once_with(run_id, status, expected_completed_at)
+                    mock_update.assert_called_once_with(run_id, status.value, expected_completed_at)
                     mock_update.reset_mock()
 
