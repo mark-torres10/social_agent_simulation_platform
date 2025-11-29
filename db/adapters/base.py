@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile, Run
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedFeed, Run
 
 
 class RunDatabaseAdapter(ABC):
@@ -223,6 +223,67 @@ class FeedPostDatabaseAdapter(ABC):
             
         Raises:
             ValueError: If any feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+
+
+class GeneratedFeedDatabaseAdapter(ABC):
+    """Abstract interface for generated feed database operations.
+    
+    This interface is database-agnostic. Currently works with GeneratedFeed.
+    Concrete implementations should document the specific exceptions they raise,
+    which may be database-specific.
+    """
+    
+    @abstractmethod
+    def write_generated_feed(self, feed: GeneratedFeed) -> None:
+        """Write a generated feed to the database.
+        
+        Args:
+            feed: GeneratedFeed model to write
+            
+        Raises:
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_generated_feed(self, agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
+        """Read a generated feed by composite key.
+        
+        Args:
+            agent_handle: Agent handle to look up
+            run_id: Run ID to look up
+            turn_number: Turn number to look up
+            
+        Returns:
+            GeneratedFeed model for the specified agent, run, and turn.
+            
+        Raises:
+            ValueError: If no feed is found for the given composite key
+            ValueError: If the feed data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_all_generated_feeds(self) -> list[GeneratedFeed]:
+        """Read all generated feeds.
+        
+        Returns:
+            List of all GeneratedFeed models. Returns empty list if no feeds exist.
+            
+        Raises:
+            ValueError: If any feed data is invalid (NULL fields)
             KeyError: If required columns are missing from any database row
             Exception: Database-specific exception if the operation fails.
                       Implementations should document the specific exception types
