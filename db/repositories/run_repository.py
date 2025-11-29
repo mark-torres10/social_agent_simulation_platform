@@ -2,9 +2,10 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional
+import uuid
+
 from db.models import RunConfig, Run, RunStatus
 from lib.utils import get_current_timestamp
-
 
 class RunRepository(ABC):
     """Abstract base class defining the interface for run repositories."""
@@ -41,7 +42,7 @@ class SQLiteRunRepository(RunRepository):
         from lib.utils import get_current_timestamp
         
         ts = get_current_timestamp()
-        run_id = f"run_{ts}"
+        run_id = f"run_{ts}_{uuid.uuid4()}"
 
         run = Run(
             run_id=run_id,
