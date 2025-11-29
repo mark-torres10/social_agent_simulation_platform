@@ -1,0 +1,311 @@
+"""Tests for db.repositories.generated_feed_repository module."""
+
+import pytest
+from unittest.mock import Mock
+from db.repositories.generated_feed_repository import SQLiteGeneratedFeedRepository
+from db.adapters.base import GeneratedFeedDatabaseAdapter
+from db.models import GeneratedFeed
+
+
+class TestSQLiteGeneratedFeedRepositoryCreateOrUpdateGeneratedFeed:
+    """Tests for SQLiteGeneratedFeedRepository.create_or_update_generated_feed method."""
+    
+    def test_creates_generated_feed_with_correct_values(self):
+        """Test that create_or_update_generated_feed creates a feed with correct values."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="run_123",
+            turn_number=1,
+            agent_handle="test.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        
+        # Act
+        result = repo.create_or_update_generated_feed(feed)
+        
+        # Assert
+        assert result == feed
+        mock_adapter.write_generated_feed.assert_called_once_with(feed)
+    
+    def test_creates_generated_feed_with_different_values(self):
+        """Test that create_or_update_generated_feed handles different feed values correctly."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_another456",
+            run_id="run_456",
+            turn_number=5,
+            agent_handle="another.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1", "at://did:plc:test2/app.bsky.feed.post/post2"],
+            created_at="2024-02-01T12:00:00Z",
+        )
+        
+        # Act
+        result = repo.create_or_update_generated_feed(feed)
+        
+        # Assert
+        assert result.feed_id == "feed_another456"
+        assert result.run_id == "run_456"
+        assert result.turn_number == 5
+        assert len(result.post_uris) == 2
+        mock_adapter.write_generated_feed.assert_called_once_with(feed)
+    
+    def test_persists_generated_feed_to_database(self):
+        """Test that create_or_update_generated_feed persists the feed to the database via write_generated_feed."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="run_123",
+            turn_number=1,
+            agent_handle="test.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        
+        # Act
+        result = repo.create_or_update_generated_feed(feed)
+        
+        # Assert
+        mock_adapter.write_generated_feed.assert_called_once()
+        call_args = mock_adapter.write_generated_feed.call_args[0][0]
+        assert isinstance(call_args, GeneratedFeed)
+        assert call_args.feed_id == result.feed_id
+        assert call_args.run_id == result.run_id
+        assert call_args.agent_handle == result.agent_handle
+    
+    def test_raises_value_error_when_agent_handle_is_empty(self):
+        """Test that create_or_update_generated_feed raises ValueError when agent_handle is empty."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="run_123",
+            turn_number=1,
+            agent_handle="",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="agent_handle cannot be empty"):
+            repo.create_or_update_generated_feed(feed)
+        
+        mock_adapter.write_generated_feed.assert_not_called()
+    
+    def test_raises_value_error_when_run_id_is_empty(self):
+        """Test that create_or_update_generated_feed raises ValueError when run_id is empty."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="",
+            turn_number=1,
+            agent_handle="test.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            repo.create_or_update_generated_feed(feed)
+        
+        mock_adapter.write_generated_feed.assert_not_called()
+    
+    def test_raises_value_error_when_turn_number_is_none(self):
+        """Test that create_or_update_generated_feed raises ValueError when turn_number is None."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="run_123",
+            turn_number=None,  # type: ignore
+            agent_handle="test.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="turn_number cannot be None"):
+            repo.create_or_update_generated_feed(feed)
+        
+        mock_adapter.write_generated_feed.assert_not_called()
+    
+    def test_propagates_adapter_exception_when_write_fails(self):
+        """Test that create_or_update_generated_feed propagates adapter exceptions when database write fails."""
+        # Arrange
+        import sqlite3
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        db_error = sqlite3.IntegrityError("UNIQUE constraint failed: generated_feeds.agent_handle, run_id, turn_number")
+        mock_adapter.write_generated_feed.side_effect = db_error
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="run_123",
+            turn_number=1,
+            agent_handle="test.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        
+        # Act & Assert
+        with pytest.raises(sqlite3.IntegrityError) as exc_info:
+            repo.create_or_update_generated_feed(feed)
+        
+        assert exc_info.value is db_error
+        mock_adapter.write_generated_feed.assert_called_once_with(feed)
+
+
+class TestSQLiteGeneratedFeedRepositoryGetGeneratedFeed:
+    """Tests for SQLiteGeneratedFeedRepository.get_generated_feed method."""
+    
+    def test_gets_generated_feed_when_found(self):
+        """Test that get_generated_feed returns a feed when found."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        expected_feed = GeneratedFeed(
+            feed_id="feed_test123",
+            run_id="run_123",
+            turn_number=1,
+            agent_handle="test.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        mock_adapter.read_generated_feed.return_value = expected_feed
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act
+        result = repo.get_generated_feed("test.bsky.social", "run_123", 1)
+        
+        # Assert
+        assert result == expected_feed
+        mock_adapter.read_generated_feed.assert_called_once_with("test.bsky.social", "run_123", 1)
+    
+    def test_gets_generated_feed_when_not_found_raises_value_error(self):
+        """Test that get_generated_feed raises ValueError when feed is not found (matches current behavior)."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        mock_adapter.read_generated_feed.side_effect = ValueError("Generated feed not found for agent test.bsky.social, run run_123, turn 1")
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Generated feed not found"):
+            repo.get_generated_feed("test.bsky.social", "run_123", 1)
+        
+        mock_adapter.read_generated_feed.assert_called_once_with("test.bsky.social", "run_123", 1)
+    
+    def test_raises_value_error_when_agent_handle_is_empty(self):
+        """Test that get_generated_feed raises ValueError when agent_handle is empty."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="agent_handle cannot be empty"):
+            repo.get_generated_feed("", "run_123", 1)
+        
+        mock_adapter.read_generated_feed.assert_not_called()
+    
+    def test_raises_value_error_when_run_id_is_empty(self):
+        """Test that get_generated_feed raises ValueError when run_id is empty."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            repo.get_generated_feed("test.bsky.social", "", 1)
+        
+        mock_adapter.read_generated_feed.assert_not_called()
+    
+    def test_raises_value_error_when_turn_number_is_none(self):
+        """Test that get_generated_feed raises ValueError when turn_number is None."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="turn_number cannot be None"):
+            repo.get_generated_feed("test.bsky.social", "run_123", None)  # type: ignore
+        
+        mock_adapter.read_generated_feed.assert_not_called()
+
+
+class TestSQLiteGeneratedFeedRepositoryListAllGeneratedFeeds:
+    """Tests for SQLiteGeneratedFeedRepository.list_all_generated_feeds method."""
+    
+    def test_lists_all_generated_feeds_when_empty(self):
+        """Test that list_all_generated_feeds returns empty list when no feeds exist."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        mock_adapter.read_all_generated_feeds.return_value = []
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act
+        result = repo.list_all_generated_feeds()
+        
+        # Assert
+        assert result == []
+        mock_adapter.read_all_generated_feeds.assert_called_once()
+    
+    def test_lists_all_generated_feeds_when_feeds_exist(self):
+        """Test that list_all_generated_feeds returns all feeds when they exist."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        expected_feeds = [
+            GeneratedFeed(
+                feed_id=f"feed_test{i}",
+                run_id=f"run_{i}",
+                turn_number=i,
+                agent_handle=f"user{i}.bsky.social",
+                post_uris=[f"at://did:plc:test{i}/app.bsky.feed.post/post{i}"],
+                created_at=f"2024-01-0{i}T00:00:00Z",
+            )
+            for i in range(1, 4)
+        ]
+        mock_adapter.read_all_generated_feeds.return_value = expected_feeds
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act
+        result = repo.list_all_generated_feeds()
+        
+        # Assert
+        assert result == expected_feeds
+        assert len(result) == 3
+        mock_adapter.read_all_generated_feeds.assert_called_once()
+    
+    def test_lists_all_generated_feeds_returns_correct_order(self):
+        """Test that list_all_generated_feeds returns feeds in the order from adapter."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        expected_feeds = [
+            GeneratedFeed(
+                feed_id=f"feed_test{i}",
+                run_id=f"run_{i}",
+                turn_number=i,
+                agent_handle=f"user{i}.bsky.social",
+                post_uris=[f"at://did:plc:test{i}/app.bsky.feed.post/post{i}"],
+                created_at=f"2024-01-0{i}T00:00:00Z",
+            )
+            for i in range(1, 4)
+        ]
+        mock_adapter.read_all_generated_feeds.return_value = expected_feeds
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+        
+        # Act
+        result = repo.list_all_generated_feeds()
+        
+        # Assert
+        assert result[0].feed_id == "feed_test1"
+        assert result[1].feed_id == "feed_test2"
+        assert result[2].feed_id == "feed_test3"
+
