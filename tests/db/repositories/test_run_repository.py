@@ -4,7 +4,7 @@ import pytest
 import uuid
 from unittest.mock import Mock, patch
 from db.repositories.run_repository import SQLiteRunRepository
-from db.adapters import RunDatabaseAdapter
+from db.adapters.base import RunDatabaseAdapter
 from db.models import RunConfig, Run, RunStatus
 from db.exceptions import (
     RunNotFoundError,
