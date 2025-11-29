@@ -10,6 +10,7 @@ import time
 
 from db.repositories.run_repository import SQLiteRunRepository
 from db.models import RunConfig, Run, RunStatus
+from db.exceptions import RunNotFoundError, InvalidTransitionError
 from db.db import initialize_database, get_connection, DB_PATH
 
 
@@ -96,8 +97,10 @@ class TestSQLiteRunRepositoryIntegration:
         """Test updating status of a non-existent run raises error."""
         repo = SQLiteRunRepository()
         
-        with pytest.raises(RuntimeError, match="Run nonexistent_run_id not found"):
+        with pytest.raises(RunNotFoundError) as exc_info:
             repo.update_run_status("nonexistent_run_id", RunStatus.COMPLETED)
+        
+        assert exc_info.value.run_id == "nonexistent_run_id"
     
     def test_list_runs_returns_all_runs_ordered(self, temp_db):
         """Test that list_runs returns all runs in correct order."""
@@ -287,8 +290,12 @@ class TestStateMachineValidationIntegration:
         repo.update_run_status(run.run_id, RunStatus.COMPLETED)
         
         # Try invalid transition
-        with pytest.raises(ValueError, match="Invalid status transition"):
+        with pytest.raises(InvalidTransitionError) as exc_info:
             repo.update_run_status(run.run_id, RunStatus.FAILED)
+        
+        assert exc_info.value.run_id == run.run_id
+        assert exc_info.value.current_status == "completed"
+        assert exc_info.value.target_status == "failed"
         
         # Verify status is still COMPLETED
         updated_run = repo.get_run(run.run_id)
@@ -303,8 +310,12 @@ class TestStateMachineValidationIntegration:
         repo.update_run_status(run.run_id, RunStatus.FAILED)
         
         # Try invalid transition
-        with pytest.raises(ValueError, match="Invalid status transition"):
+        with pytest.raises(InvalidTransitionError) as exc_info:
             repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        assert exc_info.value.run_id == run.run_id
+        assert exc_info.value.current_status == "failed"
+        assert exc_info.value.target_status == "completed"
         
         # Verify status is still FAILED
         updated_run = repo.get_run(run.run_id)
@@ -319,8 +330,12 @@ class TestStateMachineValidationIntegration:
         repo.update_run_status(run.run_id, RunStatus.COMPLETED)
         
         # Try invalid transition
-        with pytest.raises(ValueError, match="Invalid status transition"):
+        with pytest.raises(InvalidTransitionError) as exc_info:
             repo.update_run_status(run.run_id, RunStatus.RUNNING)
+        
+        assert exc_info.value.run_id == run.run_id
+        assert exc_info.value.current_status == "completed"
+        assert exc_info.value.target_status == "running"
         
         # Verify status is still COMPLETED
         updated_run = repo.get_run(run.run_id)

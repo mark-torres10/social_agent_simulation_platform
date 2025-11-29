@@ -5,6 +5,12 @@ from typing import Optional
 import uuid
 
 from db.models import RunConfig, Run, RunStatus
+from db.exceptions import (
+    RunNotFoundError,
+    InvalidTransitionError,
+    RunCreationError,
+    RunStatusUpdateError,
+)
 
 class RunRepository(ABC):
     """Abstract base class defining the interface for run repositories."""
@@ -26,7 +32,13 @@ class RunRepository(ABC):
     
     @abstractmethod
     def update_run_status(self, run_id: str, status: RunStatus) -> None:
-        """Update a run's status."""
+        """Update a run's status.
+        
+        Raises:
+            RunNotFoundError: If the run with the given ID does not exist
+            InvalidTransitionError: If the status transition is invalid
+            RunStatusUpdateError: If the status update fails due to a database error
+        """
         raise NotImplementedError
 
 class SQLiteRunRepository(RunRepository):
@@ -43,7 +55,17 @@ class SQLiteRunRepository(RunRepository):
     }
     
     def create_run(self, config: RunConfig) -> Run:
-        """Create a new run in SQLite."""
+        """Create a new run in SQLite.
+        
+        Args:
+            config: Configuration for the run
+            
+        Returns:
+            The created Run object
+            
+        Raises:
+            RunCreationError: If the run cannot be created due to a database error
+        """
         from db.db import write_run
         from lib.utils import get_current_timestamp
         
@@ -61,7 +83,7 @@ class SQLiteRunRepository(RunRepository):
         try:
             write_run(run)
         except Exception as e:
-            raise RuntimeError(f"Failed to create run {run_id}: {e}") from e
+            raise RunCreationError(run_id, str(e)) from e
         return run
 
     def get_run(self, run_id: str) -> Optional[Run]:
@@ -82,13 +104,14 @@ class SQLiteRunRepository(RunRepository):
             status: New RunStatus enum value
             
         Raises:
-            ValueError: If the status transition is invalid
-            RuntimeError: If the update fails or run doesn't exist
+            RunNotFoundError: If the run with the given ID does not exist
+            InvalidTransitionError: If the status transition is invalid
+            RunStatusUpdateError: If the status update fails due to a database error
         """
         # Get current run to validate state transition
         current_run = self.get_run(run_id)
         if current_run is None:
-            raise RuntimeError(f"Run {run_id} not found")
+            raise RunNotFoundError(run_id)
         
         current_status = current_run.status
         
@@ -96,11 +119,14 @@ class SQLiteRunRepository(RunRepository):
         if status != current_status:
             valid_next_states = self.VALID_TRANSITIONS.get(current_status, set())
             if status not in valid_next_states:
-                raise ValueError(
-                    f"Invalid status transition for run {run_id}: "
-                    f"{current_status.value} -> {status.value}. "
-                    f"Valid transitions from {current_status.value} are: "
-                    f"{[s.value for s in valid_next_states] if valid_next_states else 'none (terminal state)'}"
+                valid_transitions_list = (
+                    [s.value for s in valid_next_states] if valid_next_states else None
+                )
+                raise InvalidTransitionError(
+                    run_id=run_id,
+                    current_status=current_status.value,
+                    target_status=status.value,
+                    valid_transitions=valid_transitions_list,
                 )
         
         try:
@@ -109,5 +135,8 @@ class SQLiteRunRepository(RunRepository):
             ts = get_current_timestamp()
             completed_at = ts if status == RunStatus.COMPLETED else None
             update_run_status(run_id, status.value, completed_at)  # Convert enum to string
+        except (RunNotFoundError, InvalidTransitionError):
+            # Re-raise domain exceptions as-is
+            raise
         except Exception as e:
-            raise RuntimeError(f"Failed to update run status {run_id}: {e}") from e
+            raise RunStatusUpdateError(run_id, str(e)) from e

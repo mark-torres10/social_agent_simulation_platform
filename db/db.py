@@ -10,6 +10,7 @@ import sqlite3
 from typing import Optional
 
 from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed, Run
+from db.exceptions import RunNotFoundError
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
@@ -600,7 +601,7 @@ def update_run_status(run_id: str, status: str, completed_at: Optional[str] = No
                      Should be set when status is 'completed', None otherwise.
     
     Raises:
-        ValueError: If no run exists with the given run_id
+        RunNotFoundError: If no run exists with the given run_id
         sqlite3.OperationalError: If database operation fails
         sqlite3.IntegrityError: If status value violates CHECK constraints
     """
@@ -613,8 +614,11 @@ def update_run_status(run_id: str, status: str, completed_at: Optional[str] = No
             """, (status, completed_at, run_id))
             if cursor.rowcount == 0:
                 conn.rollback()
-                raise ValueError(f"No run found with run_id='{run_id}' to update.")
+                raise RunNotFoundError(run_id)
             conn.commit()
+        except (RunNotFoundError, sqlite3.OperationalError, sqlite3.IntegrityError):
+            # Re-raise domain and SQLite exceptions as-is
+            raise
         except Exception:
             conn.rollback()
             raise

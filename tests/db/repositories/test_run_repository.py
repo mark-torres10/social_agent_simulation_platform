@@ -4,6 +4,12 @@ import pytest
 from unittest.mock import patch
 from db.repositories.run_repository import SQLiteRunRepository
 from db.models import RunConfig, Run, RunStatus
+from db.exceptions import (
+    RunNotFoundError,
+    InvalidTransitionError,
+    RunCreationError,
+    RunStatusUpdateError,
+)
 
 
 class TestSQLiteRunRepositoryCreateRun:
@@ -126,40 +132,50 @@ class TestSQLiteRunRepositoryCreateRun:
                 # Assert
                 assert result.completed_at is None
     
-    def test_raises_runtime_error_when_write_run_fails(self):
-        """Test that create_run raises RuntimeError when database write fails."""
+    def test_raises_run_creation_error_when_write_run_fails(self):
+        """Test that create_run raises RunCreationError when database write fails."""
+        import uuid
         # Arrange
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=5, num_turns=10)
         expected_timestamp = "2024_01_01-12:00:00"
-        expected_run_id = f"run_{expected_timestamp}"
+        mock_uuid = uuid.UUID('12345678-1234-5678-9012-123456789012')
+        expected_run_id = f"run_{expected_timestamp}_{mock_uuid}"
         db_error = Exception("Database connection failed")
         
         with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
-            with patch("db.db.write_run", side_effect=db_error):
-                # Act & Assert
-                with pytest.raises(RuntimeError) as exc_info:
-                    repo.create_run(config)
-                
-                assert f"Failed to create run {expected_run_id}" in str(exc_info.value)
-                assert isinstance(exc_info.value.__cause__, Exception)
+            with patch("db.repositories.run_repository.uuid.uuid4", return_value=mock_uuid):
+                with patch("db.db.write_run", side_effect=db_error):
+                    # Act & Assert
+                    with pytest.raises(RunCreationError) as exc_info:
+                        repo.create_run(config)
+                    
+                    assert exc_info.value.run_id == expected_run_id
+                    assert "Database connection failed" in str(exc_info.value.reason)
+                    assert isinstance(exc_info.value.__cause__, Exception)
     
-    def test_raises_runtime_error_with_correct_run_id_in_message(self):
-        """Test that RuntimeError includes the correct run_id in the error message."""
+    def test_raises_run_creation_error_with_correct_run_id_in_message(self):
+        """Test that RunCreationError includes the correct run_id in the error message."""
+        import uuid
         # Arrange
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=5, num_turns=10)
         expected_timestamp = "2024_01_01-12:00:00"
-        expected_run_id = f"run_{expected_timestamp}"
+        mock_uuid = uuid.UUID('12345678-1234-5678-9012-123456789012')
+        expected_run_id = f"run_{expected_timestamp}_{mock_uuid}"
         
         with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
-            with patch("db.db.write_run", side_effect=Exception("DB error")):
-                # Act & Assert
-                with pytest.raises(RuntimeError, match=f"Failed to create run {expected_run_id}"):
-                    repo.create_run(config)
+            with patch("db.repositories.run_repository.uuid.uuid4", return_value=mock_uuid):
+                with patch("db.db.write_run", side_effect=Exception("DB error")):
+                    # Act & Assert
+                    with pytest.raises(RunCreationError) as exc_info:
+                        repo.create_run(config)
+                    
+                    assert exc_info.value.run_id == expected_run_id
+                    assert "DB error" in str(exc_info.value.reason)
     
-    def test_preserves_original_exception_in_runtime_error(self):
-        """Test that the original exception is preserved as the cause of RuntimeError."""
+    def test_preserves_original_exception_in_run_creation_error(self):
+        """Test that the original exception is preserved as the cause of RunCreationError."""
         # Arrange
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=5, num_turns=10)
@@ -168,7 +184,7 @@ class TestSQLiteRunRepositoryCreateRun:
         with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-12:00:00"):
             with patch("db.db.write_run", side_effect=original_error):
                 # Act & Assert
-                with pytest.raises(RuntimeError) as exc_info:
+                with pytest.raises(RunCreationError) as exc_info:
                     repo.create_run(config)
                 
                 assert exc_info.value.__cause__ is original_error
@@ -695,8 +711,13 @@ class TestSQLiteRunRepositoryStateMachineValidation:
         
         with patch.object(repo, "get_run", return_value=current_run):
             # Act & Assert
-            with pytest.raises(ValueError, match="Invalid status transition"):
+            with pytest.raises(InvalidTransitionError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.FAILED)
+            
+            assert exc_info.value.run_id == run_id
+            assert exc_info.value.current_status == "completed"
+            assert exc_info.value.target_status == "failed"
+            assert exc_info.value.valid_transitions is None
     
     def test_rejects_transition_from_completed_to_running(self):
         """Test that COMPLETED -> RUNNING transition is rejected."""
@@ -715,8 +736,12 @@ class TestSQLiteRunRepositoryStateMachineValidation:
         
         with patch.object(repo, "get_run", return_value=current_run):
             # Act & Assert
-            with pytest.raises(ValueError, match="Invalid status transition"):
+            with pytest.raises(InvalidTransitionError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.RUNNING)
+            
+            assert exc_info.value.run_id == run_id
+            assert exc_info.value.current_status == "completed"
+            assert exc_info.value.target_status == "running"
     
     def test_rejects_transition_from_failed_to_completed(self):
         """Test that FAILED -> COMPLETED transition is rejected."""
@@ -735,8 +760,12 @@ class TestSQLiteRunRepositoryStateMachineValidation:
         
         with patch.object(repo, "get_run", return_value=current_run):
             # Act & Assert
-            with pytest.raises(ValueError, match="Invalid status transition"):
+            with pytest.raises(InvalidTransitionError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.COMPLETED)
+            
+            assert exc_info.value.run_id == run_id
+            assert exc_info.value.current_status == "failed"
+            assert exc_info.value.target_status == "completed"
     
     def test_rejects_transition_from_failed_to_running(self):
         """Test that FAILED -> RUNNING transition is rejected."""
@@ -755,8 +784,12 @@ class TestSQLiteRunRepositoryStateMachineValidation:
         
         with patch.object(repo, "get_run", return_value=current_run):
             # Act & Assert
-            with pytest.raises(ValueError, match="Invalid status transition"):
+            with pytest.raises(InvalidTransitionError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.RUNNING)
+            
+            assert exc_info.value.run_id == run_id
+            assert exc_info.value.current_status == "failed"
+            assert exc_info.value.target_status == "running"
     
     def test_error_message_includes_current_and_target_status(self):
         """Test that error message includes both current and target status."""
@@ -775,13 +808,15 @@ class TestSQLiteRunRepositoryStateMachineValidation:
         
         with patch.object(repo, "get_run", return_value=current_run):
             # Act & Assert
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(InvalidTransitionError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.FAILED)
             
             error_message = str(exc_info.value)
             assert "completed" in error_message.lower()
             assert "failed" in error_message.lower()
             assert run_id in error_message
+            assert exc_info.value.current_status == "completed"
+            assert exc_info.value.target_status == "failed"
     
     def test_error_message_includes_valid_transitions(self):
         """Test that error message includes information about valid transitions."""
@@ -800,20 +835,132 @@ class TestSQLiteRunRepositoryStateMachineValidation:
         
         with patch.object(repo, "get_run", return_value=current_run):
             # Act & Assert
-            with pytest.raises(ValueError) as exc_info:
+            with pytest.raises(InvalidTransitionError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.FAILED)
             
             error_message = str(exc_info.value)
             assert "terminal state" in error_message.lower() or "none" in error_message.lower()
+            assert exc_info.value.valid_transitions is None
     
-    def test_raises_runtime_error_when_run_not_found(self):
-        """Test that RuntimeError is raised when run doesn't exist."""
+    def test_raises_run_not_found_error_when_run_not_found(self):
+        """Test that RunNotFoundError is raised when run doesn't exist."""
         # Arrange
         repo = SQLiteRunRepository()
         run_id = "nonexistent_run"
         
         with patch.object(repo, "get_run", return_value=None):
             # Act & Assert
-            with pytest.raises(RuntimeError, match=f"Run {run_id} not found"):
+            with pytest.raises(RunNotFoundError) as exc_info:
                 repo.update_run_status(run_id, RunStatus.COMPLETED)
+            
+            assert exc_info.value.run_id == run_id
+
+
+class TestDomainExceptions:
+    """Tests for domain-specific exceptions."""
+    
+    def test_run_not_found_error_has_run_id_attribute(self):
+        """Test that RunNotFoundError has run_id attribute."""
+        run_id = "test_run_123"
+        error = RunNotFoundError(run_id)
+        
+        assert error.run_id == run_id
+        assert run_id in str(error)
+    
+    def test_invalid_transition_error_has_all_attributes(self):
+        """Test that InvalidTransitionError has all required attributes."""
+        run_id = "test_run_123"
+        current_status = "completed"
+        target_status = "failed"
+        valid_transitions = None
+        
+        error = InvalidTransitionError(run_id, current_status, target_status, valid_transitions)
+        
+        assert error.run_id == run_id
+        assert error.current_status == current_status
+        assert error.target_status == target_status
+        assert error.valid_transitions == valid_transitions
+        assert run_id in str(error)
+        assert current_status in str(error)
+        assert target_status in str(error)
+    
+    def test_invalid_transition_error_with_valid_transitions_list(self):
+        """Test InvalidTransitionError with a list of valid transitions."""
+        run_id = "test_run_123"
+        current_status = "running"
+        target_status = "completed"
+        valid_transitions = ["completed", "failed"]
+        
+        error = InvalidTransitionError(run_id, current_status, target_status, valid_transitions)
+        
+        assert error.valid_transitions == valid_transitions
+        assert "completed" in str(error) or "failed" in str(error)
+    
+    def test_run_creation_error_has_attributes(self):
+        """Test that RunCreationError has run_id and reason attributes."""
+        run_id = "test_run_123"
+        reason = "Database connection failed"
+        
+        error = RunCreationError(run_id, reason)
+        
+        assert error.run_id == run_id
+        assert error.reason == reason
+        assert run_id in str(error)
+        assert reason in str(error)
+    
+    def test_run_creation_error_without_reason(self):
+        """Test RunCreationError without a reason."""
+        run_id = "test_run_123"
+        
+        error = RunCreationError(run_id)
+        
+        assert error.run_id == run_id
+        assert error.reason is None
+        assert run_id in str(error)
+    
+    def test_run_status_update_error_has_attributes(self):
+        """Test that RunStatusUpdateError has run_id and reason attributes."""
+        run_id = "test_run_123"
+        reason = "Database constraint violation"
+        
+        error = RunStatusUpdateError(run_id, reason)
+        
+        assert error.run_id == run_id
+        assert error.reason == reason
+        assert run_id in str(error)
+        assert reason in str(error)
+    
+    def test_run_status_update_error_without_reason(self):
+        """Test RunStatusUpdateError without a reason."""
+        run_id = "test_run_123"
+        
+        error = RunStatusUpdateError(run_id)
+        
+        assert error.run_id == run_id
+        assert error.reason is None
+        assert run_id in str(error)
+    
+    def test_run_status_update_error_when_database_fails(self):
+        """Test that RunStatusUpdateError is raised when database update fails."""
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
+        db_error = Exception("Database connection lost")
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("db.db.update_run_status", side_effect=db_error):
+                with pytest.raises(RunStatusUpdateError) as exc_info:
+                    repo.update_run_status(run_id, RunStatus.COMPLETED)
+                
+                assert exc_info.value.run_id == run_id
+                assert "Database connection lost" in str(exc_info.value.reason)
+                assert exc_info.value.__cause__ is db_error
 

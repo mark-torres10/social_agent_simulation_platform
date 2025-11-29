@@ -5,6 +5,12 @@ from ai.create_initial_agents import create_initial_agents
 from db.db import initialize_database
 from db.models import BlueskyFeedPost, RunConfig, Run, RunStatus
 from db.repositories.run_repository import RunRepository
+from db.exceptions import (
+    RunNotFoundError,
+    InvalidTransitionError,
+    RunCreationError,
+    RunStatusUpdateError,
+)
 from feeds.feed_generator import generate_feeds
 
 def simulate_turn(agents: list[SocialMediaAgent], run_id: str, turn_number: int) -> dict:
@@ -89,7 +95,13 @@ def main():
 
     try:
         do_simulation_run(run_repo=run_repo, config=config)
-    except RuntimeError as e:
+    except (
+        RunNotFoundError,
+        InvalidTransitionError,
+        RunCreationError,
+        RunStatusUpdateError,
+        RuntimeError,
+    ) as e:
         print(f"Error: {e}")
         sys.exit(1)
 
