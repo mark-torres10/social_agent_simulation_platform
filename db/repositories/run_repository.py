@@ -5,7 +5,6 @@ from typing import Optional
 import uuid
 
 from db.models import RunConfig, Run, RunStatus
-from lib.utils import get_current_timestamp
 
 class RunRepository(ABC):
     """Abstract base class defining the interface for run repositories."""
@@ -80,6 +79,7 @@ class SQLiteRunRepository(RunRepository):
         """
         try:
             from db.db import update_run_status
+            from lib.utils import get_current_timestamp
             ts = get_current_timestamp()
             completed_at = ts if status == RunStatus.COMPLETED else None
             update_run_status(run_id, status.value, completed_at)  # Convert enum to string
