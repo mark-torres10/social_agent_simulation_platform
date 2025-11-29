@@ -508,9 +508,16 @@ def read_all_runs() -> list[Run]:
 def update_run_status(run_id: str, status: str, completed_at: Optional[str] = None) -> None:
     """Update a run's status."""
     with get_connection() as conn:
-        conn.execute("""
-            UPDATE runs 
-            SET status = ?, completed_at = ?
-            WHERE run_id = ?
-        """, (status, completed_at, run_id))
-        conn.commit()
+        try:
+            cursor = conn.execute("""
+                UPDATE runs 
+                SET status = ?, completed_at = ?
+                WHERE run_id = ?
+            """, (status, completed_at, run_id))
+            if cursor.rowcount == 0:
+                conn.rollback()
+                raise ValueError(f"No run found with run_id='{run_id}' to update.")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
