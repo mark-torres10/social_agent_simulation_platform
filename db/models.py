@@ -75,6 +75,20 @@ class RunConfig(BaseModel):
     num_turns: int
 
 class RunStatus(str, Enum):
+    """
+    Enum representing the state of a simulation run.
+
+    State transitions:
+      - RUNNING: The run is actively in progress. All runs start in this state.
+      - COMPLETED: The run has finished successfully. Set when the simulation
+        completes all turns and agents have completed their actions.
+      - FAILED: The run has terminated abnormally due to an error or interruption.
+        No further progress will be made.
+
+    Valid transitions:
+      - RUNNING -> COMPLETED: Normal successful completion.
+      - RUNNING -> FAILED: Error or failure during simulation.
+    """
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
