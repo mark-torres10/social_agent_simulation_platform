@@ -100,7 +100,19 @@ class SQLiteRunRepository(RunRepository):
         return run
 
     def get_run(self, run_id: str) -> Optional[Run]:
-        """Get a run from SQLite."""
+        """Get a run from SQLite.
+        
+        Args:
+            run_id: Unique identifier for the run
+            
+        Returns:
+            Run model if found, None otherwise
+            
+        Raises:
+            ValueError: If run_id is empty or None
+        """
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
         return self._db_adapter.read_run(run_id)
     
     def list_runs(self) -> list[Run]:
@@ -115,10 +127,17 @@ class SQLiteRunRepository(RunRepository):
             status: New RunStatus enum value
             
         Raises:
+            ValueError: If run_id is empty or status is None
             RunNotFoundError: If the run with the given ID does not exist
             InvalidTransitionError: If the status transition is invalid
             RunStatusUpdateError: If the status update fails due to a database error
         """
+        # Validate input parameters
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        if status is None:
+            raise ValueError("status cannot be None")
+        
         # Get current run to validate state transition
         current_run = self.get_run(run_id)
         if current_run is None:
