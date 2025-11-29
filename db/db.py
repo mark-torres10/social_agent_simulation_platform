@@ -100,6 +100,10 @@ def initialize_database() -> None:
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at DESC)
         """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_bluesky_feed_posts_author_handle 
+            ON bluesky_feed_posts(author_handle)
+        """)
 
         conn.commit()
 
@@ -163,10 +167,15 @@ def write_feed_post(post: BlueskyFeedPost) -> None:
 
 
 def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
-    """Write multiple Bluesky feed posts to the database.
+    """Write multiple Bluesky feed posts to the database (batch operation).
+    
+    This function uses executemany for efficient batch insertion. All posts
+    are written in a single transaction. If any post fails, the entire batch
+    will fail.
     
     Args:
-        posts: List of BlueskyFeedPost models to write
+        posts: List of BlueskyFeedPost models to write. Empty list is allowed
+               and will result in no database operations.
         
     Raises:
         sqlite3.IntegrityError: If any uri violates constraints
