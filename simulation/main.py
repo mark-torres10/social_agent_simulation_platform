@@ -49,7 +49,6 @@ def do_simulation_run(
     
     Args:
         run_repo: Repository for run operations
-        run_id: Unique identifier for this run
         config: Configuration for the run
     """
     run: Run = run_repo.create_run(config)
