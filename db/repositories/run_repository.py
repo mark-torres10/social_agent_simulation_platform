@@ -70,7 +70,10 @@ class SQLiteRunRepository(RunRepository):
     
     def update_run_status(self, run_id: str, status: RunStatus) -> None:
         """Update run status in SQLite."""
-        from db.db import update_run_status
-        ts = get_current_timestamp()
-        completed_at = ts if status == RunStatus.COMPLETED else None
-        update_run_status(run_id, status, completed_at)
+        try:
+            from db.db import update_run_status
+            ts = get_current_timestamp()
+            completed_at = ts if status == RunStatus.COMPLETED else None
+            update_run_status(run_id, status, completed_at)
+        except Exception as e:
+            raise RuntimeError(f"Failed to update run status {run_id}: {e}") from e
