@@ -85,8 +85,8 @@ def main():
     """CLI entry point - creates repository and runs simulation."""
     initialize_database()
 
-    from db.repositories.run_repository import SQLiteRunRepository
-    run_repo = SQLiteRunRepository()
+    from db.repositories.run_repository import create_sqlite_repository
+    run_repo = create_sqlite_repository()
 
     config = RunConfig(
         num_agents=10,

@@ -8,7 +8,7 @@ import tempfile
 import os
 import time
 
-from db.repositories.run_repository import SQLiteRunRepository
+from db.repositories.run_repository import create_sqlite_repository
 from db.models import RunConfig, Run, RunStatus
 from db.exceptions import RunNotFoundError, InvalidTransitionError
 from db.db import initialize_database, get_connection, DB_PATH
@@ -44,7 +44,7 @@ class TestSQLiteRunRepositoryIntegration:
     
     def test_create_and_read_run(self, temp_db):
         """Test creating a run and reading it back from the database."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=5, num_turns=10)
         
         # Create run
@@ -63,7 +63,7 @@ class TestSQLiteRunRepositoryIntegration:
     
     def test_update_run_status_to_completed(self, temp_db):
         """Test updating run status to completed."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -79,7 +79,7 @@ class TestSQLiteRunRepositoryIntegration:
     
     def test_update_run_status_to_failed(self, temp_db):
         """Test updating run status to failed."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -95,7 +95,7 @@ class TestSQLiteRunRepositoryIntegration:
     
     def test_update_run_status_nonexistent_run(self, temp_db):
         """Test updating status of a non-existent run raises error."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         
         with pytest.raises(RunNotFoundError) as exc_info:
             repo.update_run_status("nonexistent_run_id", RunStatus.COMPLETED)
@@ -104,7 +104,7 @@ class TestSQLiteRunRepositoryIntegration:
     
     def test_list_runs_returns_all_runs_ordered(self, temp_db):
         """Test that list_runs returns all runs in correct order."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         
         # Create multiple runs with delays to ensure distinct timestamps
         run1 = repo.create_run(RunConfig(num_agents=1, num_turns=1))
@@ -180,7 +180,7 @@ class TestRunStatusEnumSerialization:
     
     def test_all_status_values_roundtrip(self, temp_db):
         """Test that all RunStatus enum values roundtrip correctly."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=2, num_turns=2)
         
         # Test RUNNING status (default from create_run)
@@ -220,7 +220,7 @@ class TestConcurrentRunCreation:
         """Test that concurrent run creation generates unique run IDs."""
         import threading
         
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=1, num_turns=1)
         
         run_ids = []
@@ -253,7 +253,7 @@ class TestStateMachineValidationIntegration:
     
     def test_valid_transition_running_to_completed(self, temp_db):
         """Test that RUNNING -> COMPLETED transition works with real database."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -268,7 +268,7 @@ class TestStateMachineValidationIntegration:
     
     def test_valid_transition_running_to_failed(self, temp_db):
         """Test that RUNNING -> FAILED transition works with real database."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -283,7 +283,7 @@ class TestStateMachineValidationIntegration:
     
     def test_invalid_transition_completed_to_failed(self, temp_db):
         """Test that COMPLETED -> FAILED transition is rejected."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -303,7 +303,7 @@ class TestStateMachineValidationIntegration:
     
     def test_invalid_transition_failed_to_completed(self, temp_db):
         """Test that FAILED -> COMPLETED transition is rejected."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -323,7 +323,7 @@ class TestStateMachineValidationIntegration:
     
     def test_invalid_transition_completed_to_running(self, temp_db):
         """Test that COMPLETED -> RUNNING transition is rejected."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -343,7 +343,7 @@ class TestStateMachineValidationIntegration:
     
     def test_idempotent_status_update_completed(self, temp_db):
         """Test that setting COMPLETED status again is allowed (idempotent)."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
@@ -357,7 +357,7 @@ class TestStateMachineValidationIntegration:
     
     def test_idempotent_status_update_failed(self, temp_db):
         """Test that setting FAILED status again is allowed (idempotent)."""
-        repo = SQLiteRunRepository()
+        repo = create_sqlite_repository()
         config = RunConfig(num_agents=3, num_turns=5)
         
         run = repo.create_run(config)
