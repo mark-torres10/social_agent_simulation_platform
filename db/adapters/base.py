@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from db.models import BlueskyProfile, Run
+from db.models import BlueskyFeedPost, BlueskyProfile, Run
 
 
 class RunDatabaseAdapter(ABC):
@@ -132,6 +132,97 @@ class ProfileDatabaseAdapter(ABC):
             
         Raises:
             ValueError: If any profile data is invalid (NULL fields)
+            KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+
+
+class FeedPostDatabaseAdapter(ABC):
+    """Abstract interface for feed post database operations.
+    
+    This interface is database-agnostic. Currently works with BlueskyFeedPost.
+    Concrete implementations should document the specific exceptions they raise,
+    which may be database-specific.
+    """
+    
+    @abstractmethod
+    def write_feed_post(self, post: BlueskyFeedPost) -> None:
+        """Write a feed post to the database.
+        
+        Args:
+            post: BlueskyFeedPost model to write
+            
+        Raises:
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def write_feed_posts(self, posts: list[BlueskyFeedPost]) -> None:
+        """Write multiple feed posts to the database (batch operation).
+        
+        Args:
+            posts: List of BlueskyFeedPost models to write
+            
+        Raises:
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+        """Read a feed post by URI.
+        
+        Args:
+            uri: Post URI to look up
+            
+        Returns:
+            BlueskyFeedPost model if found, None otherwise.
+            
+        Raises:
+            ValueError: If the feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_feed_posts_by_author(self, author_handle: str) -> list[BlueskyFeedPost]:
+        """Read all feed posts by a specific author.
+        
+        Args:
+            author_handle: Author handle to filter by
+            
+        Returns:
+            List of BlueskyFeedPost models for the author.
+            
+        Raises:
+            ValueError: If any feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_all_feed_posts(self) -> list[BlueskyFeedPost]:
+        """Read all feed posts.
+        
+        Returns:
+            List of all BlueskyFeedPost models. Returns empty list if no posts exist.
+            
+        Raises:
+            ValueError: If any feed post data is invalid (NULL fields)
             KeyError: If required columns are missing from any database row
             Exception: Database-specific exception if the operation fails.
                       Implementations should document the specific exception types

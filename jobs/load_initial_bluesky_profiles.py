@@ -5,7 +5,8 @@ For now, what this looks like is:
 - Using that information to create a bio for the agent.
 - Persisting the agent to the SQLite database.
 """
-from db.db import initialize_database, write_feed_posts
+from db.db import initialize_database
+from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from db.models import BlueskyFeedPost, BlueskyProfile
 from lib.bluesky_client import BlueskyClient
@@ -87,6 +88,7 @@ def get_bsky_profile_information(handle: str) -> dict:
 def main():
     initialize_database()
     profile_repo = create_sqlite_profile_repository()
+    feed_post_repo = create_sqlite_feed_post_repository()
     for handle in BLUESKY_PROFILES:
         print(f"Getting profile information for {handle}...")
         profile_info = get_bsky_profile_information(handle)
@@ -94,7 +96,7 @@ def main():
         profile = transform_bsky_profile(profile_info["profile"])
         profile_repo.create_or_update_profile(profile)
         feed_posts = transform_bsky_author_feed(profile_info["author_feed"])
-        write_feed_posts(feed_posts)
+        feed_post_repo.create_or_update_feed_posts(feed_posts)
 
         print(f"Profile information for {handle} written to database.")
 

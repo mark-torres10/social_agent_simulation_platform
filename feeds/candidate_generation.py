@@ -1,15 +1,17 @@
 """Generate candidate posts for the feeds."""
 
 from ai.agents import SocialMediaAgent
-from db.db import read_all_feed_posts, load_feed_post_uris_from_current_run
+from db.db import load_feed_post_uris_from_current_run
 from db.models import BlueskyFeedPost
+from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 
 
 # TODO: we can get arbitrarily complex with how we do this later
 # on, but as a first pass it's easy enough to just load all the posts.
 def load_posts() -> list[BlueskyFeedPost]:
     """Load the posts for the feeds."""
-    return read_all_feed_posts()
+    feed_post_repo = create_sqlite_feed_post_repository()
+    return feed_post_repo.list_all_feed_posts()
 
 
 def load_seen_post_uris(
