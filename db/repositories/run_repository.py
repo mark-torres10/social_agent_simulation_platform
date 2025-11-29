@@ -35,6 +35,13 @@ class SQLiteRunRepository(RunRepository):
     Uses functions from db.db module to interact with SQLite database.
     """
     
+    # Valid state transitions for run status
+    VALID_TRANSITIONS = {
+        RunStatus.RUNNING: {RunStatus.COMPLETED, RunStatus.FAILED},
+        RunStatus.COMPLETED: set(),  # Terminal state
+        RunStatus.FAILED: set(),     # Terminal state
+    }
+    
     def create_run(self, config: RunConfig) -> Run:
         """Create a new run in SQLite."""
         from db.db import write_run
@@ -75,8 +82,27 @@ class SQLiteRunRepository(RunRepository):
             status: New RunStatus enum value
             
         Raises:
+            ValueError: If the status transition is invalid
             RuntimeError: If the update fails or run doesn't exist
         """
+        # Get current run to validate state transition
+        current_run = self.get_run(run_id)
+        if current_run is None:
+            raise RuntimeError(f"Run {run_id} not found")
+        
+        current_status = current_run.status
+        
+        # Validate state transition
+        if status != current_status:
+            valid_next_states = self.VALID_TRANSITIONS.get(current_status, set())
+            if status not in valid_next_states:
+                raise ValueError(
+                    f"Invalid status transition for run {run_id}: "
+                    f"{current_status.value} -> {status.value}. "
+                    f"Valid transitions from {current_status.value} are: "
+                    f"{[s.value for s in valid_next_states] if valid_next_states else 'none (terminal state)'}"
+                )
+        
         try:
             from db.db import update_run_status
             from lib.utils import get_current_timestamp

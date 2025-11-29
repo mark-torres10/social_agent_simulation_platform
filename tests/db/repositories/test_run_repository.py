@@ -415,19 +415,29 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         run_id = "run_123"
         status = RunStatus.COMPLETED
         expected_timestamp = "2024_01_01-13:00:00"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
-        with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
-            with patch("db.db.update_run_status") as mock_update:
-                # Act
-                repo.update_run_status(run_id, status)
-                
-                # Assert
-                # Verify that status enum is converted to string value
-                mock_update.assert_called_once()
-                call_args = mock_update.call_args[0]
-                assert call_args[0] == run_id
-                assert call_args[1] == status.value  # Enum value (string) is passed
-                assert call_args[2] == expected_timestamp
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, status)
+                    
+                    # Assert
+                    # Verify that status enum is converted to string value
+                    mock_update.assert_called_once()
+                    call_args = mock_update.call_args[0]
+                    assert call_args[0] == run_id
+                    assert call_args[1] == status.value  # Enum value (string) is passed
+                    assert call_args[2] == expected_timestamp
     
     def test_updates_status_to_failed_without_completed_at(self):
         """Test that update_run_status sets completed_at to None for FAILED status."""
@@ -435,14 +445,24 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         repo = SQLiteRunRepository()
         run_id = "run_123"
         status = RunStatus.FAILED
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
-        with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
-            with patch("db.db.update_run_status") as mock_update:
-                # Act
-                repo.update_run_status(run_id, status)
-                
-                # Assert
-                mock_update.assert_called_once_with(run_id, status.value, None)
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, status)
+                    
+                    # Assert
+                    mock_update.assert_called_once_with(run_id, status.value, None)
     
     def test_updates_status_to_running_without_completed_at(self):
         """Test that update_run_status sets completed_at to None for RUNNING status."""
@@ -450,14 +470,24 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         repo = SQLiteRunRepository()
         run_id = "run_123"
         status = RunStatus.RUNNING
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
-        with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
-            with patch("db.db.update_run_status") as mock_update:
-                # Act
-                repo.update_run_status(run_id, status)
-                
-                # Assert
-                mock_update.assert_called_once_with(run_id, status.value, None)
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, status)
+                    
+                    # Assert
+                    mock_update.assert_called_once_with(run_id, status.value, None)
     
     def test_calls_update_run_status_with_correct_parameters_for_completed(self):
         """Test that update_run_status calls db function with correct parameters for COMPLETED."""
@@ -466,18 +496,28 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         run_id = "run_123"
         status = RunStatus.COMPLETED
         expected_timestamp = "2024_01_01-13:00:00"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
-        with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
-            with patch("db.db.update_run_status") as mock_update:
-                # Act
-                repo.update_run_status(run_id, status)
-                
-                # Assert
-                mock_update.assert_called_once()
-                call_args = mock_update.call_args[0]
-                assert call_args[0] == run_id
-                assert call_args[1] == status.value  # Enum value (string) is passed
-                assert call_args[2] == expected_timestamp
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, status)
+                    
+                    # Assert
+                    mock_update.assert_called_once()
+                    call_args = mock_update.call_args[0]
+                    assert call_args[0] == run_id
+                    assert call_args[1] == status.value  # Enum value (string) is passed
+                    assert call_args[2] == expected_timestamp
     
     def test_calls_update_run_status_with_correct_parameters_for_failed(self):
         """Test that update_run_status calls db function with correct parameters for FAILED."""
@@ -485,18 +525,28 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         repo = SQLiteRunRepository()
         run_id = "run_123"
         status = RunStatus.FAILED
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
-        with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
-            with patch("db.db.update_run_status") as mock_update:
-                # Act
-                repo.update_run_status(run_id, status)
-                
-                # Assert
-                mock_update.assert_called_once()
-                call_args = mock_update.call_args[0]
-                assert call_args[0] == run_id
-                assert call_args[1] == status.value  # Enum value (string) is passed
-                assert call_args[2] is None
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, status)
+                    
+                    # Assert
+                    mock_update.assert_called_once()
+                    call_args = mock_update.call_args[0]
+                    assert call_args[0] == run_id
+                    assert call_args[1] == status.value  # Enum value (string) is passed
+                    assert call_args[2] is None
     
     def test_uses_current_timestamp_for_completed_status(self):
         """Test that update_run_status uses get_current_timestamp for COMPLETED status."""
@@ -506,29 +556,264 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         status = RunStatus.COMPLETED
         timestamp1 = "2024_01_01-13:00:00"
         timestamp2 = "2024_01_01-14:00:00"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
-        with patch("lib.utils.get_current_timestamp", side_effect=[timestamp1, timestamp2]):
-            with patch("db.db.update_run_status") as mock_update:
-                # Act
-                repo.update_run_status(run_id, status)
-                
-                # Assert
-                mock_update.assert_called_once_with(run_id, status.value, timestamp1)
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", side_effect=[timestamp1, timestamp2]):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, status)
+                    
+                    # Assert
+                    mock_update.assert_called_once_with(run_id, status.value, timestamp1)
     
     def test_handles_all_run_status_values(self):
         """Test that update_run_status handles all RunStatus enum values correctly."""
         # Arrange
         repo = SQLiteRunRepository()
         run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
         
         for status in RunStatus:
+            with patch.object(repo, "get_run", return_value=current_run):
+                with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+                    with patch("db.db.update_run_status") as mock_update:
+                        # Act
+                        repo.update_run_status(run_id, status)
+                        
+                        # Assert
+                        expected_completed_at = "2024_01_01-13:00:00" if status == RunStatus.COMPLETED else None
+                        mock_update.assert_called_once_with(run_id, status.value, expected_completed_at)
+                        mock_update.reset_mock()
+
+
+class TestSQLiteRunRepositoryStateMachineValidation:
+    """Tests for state machine validation in update_run_status."""
+    
+    def test_allows_transition_from_running_to_completed(self):
+        """Test that RUNNING -> COMPLETED transition is allowed."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
             with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
                 with patch("db.db.update_run_status") as mock_update:
                     # Act
-                    repo.update_run_status(run_id, status)
+                    repo.update_run_status(run_id, RunStatus.COMPLETED)
                     
                     # Assert
-                    expected_completed_at = "2024_01_01-13:00:00" if status == RunStatus.COMPLETED else None
-                    mock_update.assert_called_once_with(run_id, status.value, expected_completed_at)
-                    mock_update.reset_mock()
+                    mock_update.assert_called_once()
+    
+    def test_allows_transition_from_running_to_failed(self):
+        """Test that RUNNING -> FAILED transition is allowed."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, RunStatus.FAILED)
+                    
+                    # Assert
+                    mock_update.assert_called_once()
+    
+    def test_allows_idempotent_status_update(self):
+        """Test that setting the same status is allowed (idempotent operation)."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.COMPLETED,
+            completed_at="2024_01_01-13:00:00"
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-14:00:00"):
+                with patch("db.db.update_run_status") as mock_update:
+                    # Act
+                    repo.update_run_status(run_id, RunStatus.COMPLETED)
+                    
+                    # Assert
+                    mock_update.assert_called_once()
+    
+    def test_rejects_transition_from_completed_to_failed(self):
+        """Test that COMPLETED -> FAILED transition is rejected."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.COMPLETED,
+            completed_at="2024_01_01-13:00:00"
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            # Act & Assert
+            with pytest.raises(ValueError, match="Invalid status transition"):
+                repo.update_run_status(run_id, RunStatus.FAILED)
+    
+    def test_rejects_transition_from_completed_to_running(self):
+        """Test that COMPLETED -> RUNNING transition is rejected."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.COMPLETED,
+            completed_at="2024_01_01-13:00:00"
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            # Act & Assert
+            with pytest.raises(ValueError, match="Invalid status transition"):
+                repo.update_run_status(run_id, RunStatus.RUNNING)
+    
+    def test_rejects_transition_from_failed_to_completed(self):
+        """Test that FAILED -> COMPLETED transition is rejected."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.FAILED,
+            completed_at=None
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            # Act & Assert
+            with pytest.raises(ValueError, match="Invalid status transition"):
+                repo.update_run_status(run_id, RunStatus.COMPLETED)
+    
+    def test_rejects_transition_from_failed_to_running(self):
+        """Test that FAILED -> RUNNING transition is rejected."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.FAILED,
+            completed_at=None
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            # Act & Assert
+            with pytest.raises(ValueError, match="Invalid status transition"):
+                repo.update_run_status(run_id, RunStatus.RUNNING)
+    
+    def test_error_message_includes_current_and_target_status(self):
+        """Test that error message includes both current and target status."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.COMPLETED,
+            completed_at="2024_01_01-13:00:00"
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            # Act & Assert
+            with pytest.raises(ValueError) as exc_info:
+                repo.update_run_status(run_id, RunStatus.FAILED)
+            
+            error_message = str(exc_info.value)
+            assert "completed" in error_message.lower()
+            assert "failed" in error_message.lower()
+            assert run_id in error_message
+    
+    def test_error_message_includes_valid_transitions(self):
+        """Test that error message includes information about valid transitions."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "run_123"
+        current_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,
+            total_agents=5,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.COMPLETED,
+            completed_at="2024_01_01-13:00:00"
+        )
+        
+        with patch.object(repo, "get_run", return_value=current_run):
+            # Act & Assert
+            with pytest.raises(ValueError) as exc_info:
+                repo.update_run_status(run_id, RunStatus.FAILED)
+            
+            error_message = str(exc_info.value)
+            assert "terminal state" in error_message.lower() or "none" in error_message.lower()
+    
+    def test_raises_runtime_error_when_run_not_found(self):
+        """Test that RuntimeError is raised when run doesn't exist."""
+        # Arrange
+        repo = SQLiteRunRepository()
+        run_id = "nonexistent_run"
+        
+        with patch.object(repo, "get_run", return_value=None):
+            # Act & Assert
+            with pytest.raises(RuntimeError, match=f"Run {run_id} not found"):
+                repo.update_run_status(run_id, RunStatus.COMPLETED)
 

@@ -96,7 +96,7 @@ class TestSQLiteRunRepositoryIntegration:
         """Test updating status of a non-existent run raises error."""
         repo = SQLiteRunRepository()
         
-        with pytest.raises(RuntimeError, match="Failed to update run status"):
+        with pytest.raises(RuntimeError, match="Run nonexistent_run_id not found"):
             repo.update_run_status("nonexistent_run_id", RunStatus.COMPLETED)
     
     def test_list_runs_returns_all_runs_ordered(self, temp_db):
@@ -180,14 +180,34 @@ class TestRunStatusEnumSerialization:
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=2, num_turns=2)
         
-        run = repo.create_run(config)
+        # Test RUNNING status (default from create_run)
+        run_running = repo.create_run(config)
+        retrieved = repo.get_run(run_running.run_id)
+        assert retrieved is not None
+        assert retrieved.status == RunStatus.RUNNING
         
-        # Test each status
-        for status in RunStatus:
-            repo.update_run_status(run.run_id, status)
-            retrieved = repo.get_run(run.run_id)
-            assert retrieved is not None
-            assert retrieved.status == status
+        # Test COMPLETED status (valid transition from RUNNING)
+        run_completed = repo.create_run(config)
+        repo.update_run_status(run_completed.run_id, RunStatus.COMPLETED)
+        retrieved = repo.get_run(run_completed.run_id)
+        assert retrieved is not None
+        assert retrieved.status == RunStatus.COMPLETED
+        
+        # Test FAILED status (valid transition from RUNNING)
+        run_failed = repo.create_run(config)
+        repo.update_run_status(run_failed.run_id, RunStatus.FAILED)
+        retrieved = repo.get_run(run_failed.run_id)
+        assert retrieved is not None
+        assert retrieved.status == RunStatus.FAILED
+        
+        # Test idempotent updates (setting same status again)
+        repo.update_run_status(run_completed.run_id, RunStatus.COMPLETED)
+        retrieved = repo.get_run(run_completed.run_id)
+        assert retrieved.status == RunStatus.COMPLETED
+        
+        repo.update_run_status(run_failed.run_id, RunStatus.FAILED)
+        retrieved = repo.get_run(run_failed.run_id)
+        assert retrieved.status == RunStatus.FAILED
 
 
 class TestConcurrentRunCreation:
@@ -223,6 +243,116 @@ class TestConcurrentRunCreation:
         
         # Verify all IDs are unique
         assert len(set(run_ids)) == 10
+
+
+class TestStateMachineValidationIntegration:
+    """Integration tests for state machine validation."""
+    
+    def test_valid_transition_running_to_completed(self, temp_db):
+        """Test that RUNNING -> COMPLETED transition works with real database."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        assert run.status == RunStatus.RUNNING
+        
+        # Transition to completed
+        repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run is not None
+        assert updated_run.status == RunStatus.COMPLETED
+    
+    def test_valid_transition_running_to_failed(self, temp_db):
+        """Test that RUNNING -> FAILED transition works with real database."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        assert run.status == RunStatus.RUNNING
+        
+        # Transition to failed
+        repo.update_run_status(run.run_id, RunStatus.FAILED)
+        
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run is not None
+        assert updated_run.status == RunStatus.FAILED
+    
+    def test_invalid_transition_completed_to_failed(self, temp_db):
+        """Test that COMPLETED -> FAILED transition is rejected."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        # Try invalid transition
+        with pytest.raises(ValueError, match="Invalid status transition"):
+            repo.update_run_status(run.run_id, RunStatus.FAILED)
+        
+        # Verify status is still COMPLETED
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run.status == RunStatus.COMPLETED
+    
+    def test_invalid_transition_failed_to_completed(self, temp_db):
+        """Test that FAILED -> COMPLETED transition is rejected."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        repo.update_run_status(run.run_id, RunStatus.FAILED)
+        
+        # Try invalid transition
+        with pytest.raises(ValueError, match="Invalid status transition"):
+            repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        # Verify status is still FAILED
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run.status == RunStatus.FAILED
+    
+    def test_invalid_transition_completed_to_running(self, temp_db):
+        """Test that COMPLETED -> RUNNING transition is rejected."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        # Try invalid transition
+        with pytest.raises(ValueError, match="Invalid status transition"):
+            repo.update_run_status(run.run_id, RunStatus.RUNNING)
+        
+        # Verify status is still COMPLETED
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run.status == RunStatus.COMPLETED
+    
+    def test_idempotent_status_update_completed(self, temp_db):
+        """Test that setting COMPLETED status again is allowed (idempotent)."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        # Setting to COMPLETED again should work
+        repo.update_run_status(run.run_id, RunStatus.COMPLETED)
+        
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run.status == RunStatus.COMPLETED
+    
+    def test_idempotent_status_update_failed(self, temp_db):
+        """Test that setting FAILED status again is allowed (idempotent)."""
+        repo = SQLiteRunRepository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        
+        run = repo.create_run(config)
+        repo.update_run_status(run.run_id, RunStatus.FAILED)
+        
+        # Setting to FAILED again should work
+        repo.update_run_status(run.run_id, RunStatus.FAILED)
+        
+        updated_run = repo.get_run(run.run_id)
+        assert updated_run.status == RunStatus.FAILED
 
 
 def _create_mock_row(**overrides):
