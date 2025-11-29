@@ -177,16 +177,17 @@ class FeedPostDatabaseAdapter(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def read_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+    def read_feed_post(self, uri: str) -> BlueskyFeedPost:
         """Read a feed post by URI.
         
         Args:
             uri: Post URI to look up
             
         Returns:
-            BlueskyFeedPost model if found, None otherwise.
+            BlueskyFeedPost model if found.
             
         Raises:
+            ValueError: If uri is empty or if no feed post is found for the given URI
             ValueError: If the feed post data is invalid (NULL fields)
             KeyError: If required columns are missing from the database row
             Exception: Database-specific exception if the operation fails.
@@ -285,6 +286,26 @@ class GeneratedFeedDatabaseAdapter(ABC):
         Raises:
             ValueError: If any feed data is invalid (NULL fields)
             KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_post_uris_for_run(self, agent_handle: str, run_id: str) -> set[str]:
+        """Read all post URIs from generated feeds for a specific agent and run.
+        
+        Args:
+            agent_handle: Agent handle to filter by
+            run_id: Run ID to filter by
+            
+        Returns:
+            Set of post URIs from all generated feeds matching the agent and run.
+            Returns empty set if no feeds found.
+            
+        Raises:
+            ValueError: If agent_handle or run_id is empty
             Exception: Database-specific exception if the operation fails.
                       Implementations should document the specific exception types
                       they raise.

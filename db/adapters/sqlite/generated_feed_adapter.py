@@ -59,4 +59,22 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
         """
         from db.db import read_all_generated_feeds
         return read_all_generated_feeds()
+    
+    def read_post_uris_for_run(self, agent_handle: str, run_id: str) -> set[str]:
+        """Read all post URIs from generated feeds for a specific agent and run.
+        
+        Args:
+            agent_handle: Agent handle to filter by
+            run_id: Run ID to filter by
+            
+        Returns:
+            Set of post URIs from all generated feeds matching the agent and run.
+            Returns empty set if no feeds found.
+        
+        Raises:
+            ValueError: If agent_handle or run_id is empty
+            sqlite3.OperationalError: If database operation fails
+        """
+        from db.db import read_post_uris_for_run
+        return read_post_uris_for_run(agent_handle, run_id)
 
