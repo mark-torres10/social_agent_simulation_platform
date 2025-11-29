@@ -213,22 +213,40 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
         conn.commit()
 
 def write_run(run: Run) -> None:
-    """Write a run to the database."""
+    """
+    Write a run to the database.
+
+    Note:
+        This function creates or replaces a single run record within 
+        its own transaction scope. If you need to perform multi-table 
+        operations that must succeed or fail together (e.g., creating a run
+        and related records in other tables), you are responsible for
+        managing the transaction boundaries externally. Use a single
+        database connection and control commit/rollback yourself in such cases,
+        or refactor to accept an existing connection.
+
+    Args:
+        run: Run model to write.
+    """
     with get_connection() as conn:
-        conn.execute("""
-            INSERT OR REPLACE INTO runs 
-            (run_id, created_at, total_turns, total_agents, started_at, status, completed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (
-            run.run_id,
-            run.created_at,
-            run.total_turns,
-            run.total_agents,
-            run.started_at,
-            run.status,
-            run.completed_at,
-        ))
-        conn.commit()
+        try:
+            conn.execute("""
+                INSERT OR REPLACE INTO runs 
+                (run_id, created_at, total_turns, total_agents, started_at, status, completed_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                run.run_id,
+                run.created_at,
+                run.total_turns,
+                run.total_agents,
+                run.started_at,
+                run.status,
+                run.completed_at,
+            ))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
 
 def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
