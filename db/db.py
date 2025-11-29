@@ -229,6 +229,10 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
     
     Args:
         feed: GeneratedFeed model to write
+        
+    Raises:
+        sqlite3.IntegrityError: If composite key (agent_handle, run_id, turn_number) violates constraints
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         conn.execute("""
@@ -297,6 +301,9 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
         
     Raises:
         ValueError: If no feed is found for the given agent_handle, run_id, and turn_number
+        ValueError: If the feed data is invalid (NULL fields)
+        KeyError: If required columns are missing from the database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         row = conn.execute(
@@ -308,6 +315,10 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
             # this isn't supposed to happen, so we want to raise an error if it does.
             raise ValueError(f"Generated feed not found for agent {agent_handle}, run {run_id}, turn {turn_number}")
         
+        # Validate required fields are not NULL
+        context = f"generated feed agent_handle={agent_handle}, run_id={run_id}, turn_number={turn_number}"
+        _validate_generated_feed_row(row, context=context)
+        
         return GeneratedFeed(
             feed_id=row["feed_id"],
             run_id=row["run_id"],
@@ -316,6 +327,35 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
             post_uris=json.loads(row["post_uris"]),
             created_at=row["created_at"],
         )
+
+
+def _validate_generated_feed_row(row: sqlite3.Row, context: str | None = None) -> None:
+    """Validate that all required generated feed fields are not NULL.
+    
+    Args:
+        row: SQLite Row object containing generated feed data
+        context: Optional context string to include in error messages
+                 (e.g., "generated feed agent_handle=user.bsky.social, run_id=...")
+    
+    Raises:
+        ValueError: If any required field is NULL. Error message includes
+                    the field name and optional context.
+    """
+    required_fields = [
+        "feed_id",
+        "run_id",
+        "turn_number",
+        "agent_handle",
+        "post_uris",
+        "created_at",
+    ]
+    
+    for field in required_fields:
+        if row[field] is None:
+            error_msg = f"{field} cannot be NULL"
+            if context:
+                error_msg = f"{error_msg} (context: {context})"
+            raise ValueError(error_msg)
 
 
 def _validate_feed_post_row(row: sqlite3.Row, context: str | None = None) -> None:
@@ -600,20 +640,39 @@ def read_all_generated_feeds() -> list[GeneratedFeed]:
     
     Returns:
         List of all GeneratedFeed models
+        
+    Raises:
+        ValueError: If any feed data is invalid (NULL fields)
+        KeyError: If required columns are missing from any database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM generated_feeds").fetchall()
-        return [
-            GeneratedFeed(
+        
+        feeds = []
+        for row in rows:
+            # Validate required fields are not NULL
+            # Try to get identifying info for context, fallback if unavailable
+            try:
+                agent_handle_value = row["agent_handle"] if row["agent_handle"] is not None else "unknown"
+                run_id_value = row["run_id"] if row["run_id"] is not None else "unknown"
+                turn_number_value = row["turn_number"] if row["turn_number"] is not None else "unknown"
+                context = f"generated feed agent_handle={agent_handle_value}, run_id={run_id_value}, turn_number={turn_number_value}"
+            except (KeyError, TypeError):
+                context = "generated feed (identifying info unavailable)"
+            
+            _validate_generated_feed_row(row, context=context)
+            
+            feeds.append(GeneratedFeed(
                 feed_id=row["feed_id"],
                 run_id=row["run_id"],
                 turn_number=row["turn_number"],
                 agent_handle=row["agent_handle"],
                 post_uris=json.loads(row["post_uris"]),
                 created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+            ))
+        
+        return feeds
 
 
 def load_feed_post_uris_from_current_run(
