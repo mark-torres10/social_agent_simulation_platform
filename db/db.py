@@ -80,13 +80,15 @@ def initialize_database() -> None:
             CREATE TABLE IF NOT EXISTS runs (
                 run_id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
-                total_turns INTEGER NOT NULL,
-                total_agents INTEGER NOT NULL,
+                total_turns INTEGER NOT NULL CHECK (total_turns > 0),
+                total_agents INTEGER NOT NULL CHECK (total_agents > 0),
                 started_at TEXT NOT NULL,
                 status TEXT NOT NULL CHECK(status IN ('running', 'completed', 'failed')),
                 completed_at TEXT NULL,
-                CHECK (completed_at IS NULL OR status = 'completed')
-                CHECK (completed_at IS NULL OR completed_at >= started_at)
+                CHECK (
+                    (completed_at IS NULL OR status = 'completed') AND
+                    (completed_at IS NULL OR completed_at >= started_at)
+                )
             )
         """)
         

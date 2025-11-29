@@ -1,6 +1,6 @@
 from enum import Enum
 import uuid
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 class Like(BaseModel):
     like_id: str
@@ -73,6 +73,20 @@ class RunConfig(BaseModel):
     """Configuration for a simulation run."""
     num_agents: int
     num_turns: int
+    
+    @field_validator('num_agents')
+    @classmethod
+    def validate_num_agents(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError('num_agents must be greater than 0')
+        return v
+    
+    @field_validator('num_turns')
+    @classmethod
+    def validate_num_turns(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError('num_turns must be greater than 0')
+        return v
 
 class RunStatus(str, Enum):
     """
