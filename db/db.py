@@ -247,24 +247,20 @@ def write_run(run: Run) -> None:
         with the same run_id.
     """
     with get_connection() as conn:
-        try:
-            conn.execute("""
-                INSERT OR REPLACE INTO runs 
-                (run_id, created_at, total_turns, total_agents, started_at, status, completed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (
-                run.run_id,
-                run.created_at,
-                run.total_turns,
-                run.total_agents,
-                run.started_at,
-                run.status.value,  # Convert enum to string explicitly
-                run.completed_at,
-            ))
-            conn.commit()
-        except Exception:
-            conn.rollback()
-            raise
+        conn.execute("""
+            INSERT OR REPLACE INTO runs 
+            (run_id, created_at, total_turns, total_agents, started_at, status, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            run.run_id,
+            run.created_at,
+            run.total_turns,
+            run.total_agents,
+            run.started_at,
+            run.status.value,  # Convert enum to string explicitly
+            run.completed_at,
+        ))
+        conn.commit()
 
 
 def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
@@ -607,19 +603,11 @@ def update_run_status(run_id: str, status: str, completed_at: Optional[str] = No
         sqlite3.IntegrityError: If status value violates CHECK constraints
     """
     with get_connection() as conn:
-        try:
-            cursor = conn.execute("""
-                UPDATE runs 
-                SET status = ?, completed_at = ?
-                WHERE run_id = ?
-            """, (status, completed_at, run_id))
-            if cursor.rowcount == 0:
-                conn.rollback()
-                raise RunNotFoundError(run_id)
-            conn.commit()
-        except (RunNotFoundError, sqlite3.OperationalError, sqlite3.IntegrityError):
-            # Re-raise domain and SQLite exceptions as-is
-            raise
-        except Exception:
-            conn.rollback()
-            raise
+        cursor = conn.execute("""
+            UPDATE runs 
+            SET status = ?, completed_at = ?
+            WHERE run_id = ?
+        """, (status, completed_at, run_id))
+        if cursor.rowcount == 0:
+            raise RunNotFoundError(run_id)
+        conn.commit()
