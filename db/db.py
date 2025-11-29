@@ -83,8 +83,10 @@ def initialize_database() -> None:
                 total_turns INTEGER NOT NULL,
                 total_agents INTEGER NOT NULL,
                 started_at TEXT NOT NULL,
-                status TEXT NOT NULL,
-                completed_at TEXT NULL
+                status TEXT NOT NUL CHECK(status IN ('running', 'completed', 'failed')),
+                completed_at TEXT NULL,
+                CHECK (completed_at IS NULL OR status = 'completed')
+                CHECK (completed_at IS NULL OR completed_at >= started_at)
             )
         """)
         conn.commit()
