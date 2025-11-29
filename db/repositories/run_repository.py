@@ -69,11 +69,19 @@ class SQLiteRunRepository(RunRepository):
         return read_all_runs()
     
     def update_run_status(self, run_id: str, status: RunStatus) -> None:
-        """Update run status in SQLite."""
+        """Update run status in SQLite.
+        
+        Args:
+            run_id: Unique identifier for the run to update
+            status: New RunStatus enum value
+            
+        Raises:
+            RuntimeError: If the update fails or run doesn't exist
+        """
         try:
             from db.db import update_run_status
             ts = get_current_timestamp()
             completed_at = ts if status == RunStatus.COMPLETED else None
-            update_run_status(run_id, status, completed_at)
+            update_run_status(run_id, status.value, completed_at)  # Convert enum to string
         except Exception as e:
             raise RuntimeError(f"Failed to update run status {run_id}: {e}") from e
