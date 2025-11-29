@@ -10,7 +10,7 @@ class RunRepository(ABC):
     """Abstract base class defining the interface for run repositories."""
     
     @abstractmethod
-    def create_run(self, run_id: str, config: RunConfig) -> Run:
+    def create_run(self, config: RunConfig) -> Run:
         """Create a new run."""
         raise NotImplementedError
     
@@ -35,22 +35,28 @@ class SQLiteRunRepository(RunRepository):
     Uses functions from db.db module to interact with SQLite database.
     """
     
-    def create_run(self, run_id: str, config: RunConfig) -> Run:
+    def create_run(self, config: RunConfig) -> Run:
         """Create a new run in SQLite."""
         from db.db import write_run
         from lib.utils import get_current_timestamp
         
+        ts = get_current_timestamp()
+        run_id = f"run_{ts}"
+
         run = Run(
             run_id=run_id,
-            created_at=get_current_timestamp(),
+            created_at=ts,
             total_turns=config.num_turns,
             total_agents=config.num_agents,
-            started_at=get_current_timestamp(),
+            started_at=ts,
             status=RunStatus.RUNNING,
         )
-        write_run(run)
+        try:
+            write_run(run)
+        except Exception as e:
+            raise RuntimeError(f"Failed to create run {run_id}: {e}") from e
         return run
-    
+
     def get_run(self, run_id: str) -> Optional[Run]:
         """Get a run from SQLite."""
         from db.db import read_run
