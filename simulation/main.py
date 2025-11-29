@@ -66,7 +66,12 @@ def do_simulation_run(
             print(f"Total actions on turn {i}: {total_actions}")
         run_repo.update_run_status(run.run_id, RunStatus.COMPLETED)
     except Exception as e:
-        run_repo.update_run_status(run.run_id, RunStatus.FAILED)
+        # Attempt to update status, but don't let status update failure mask original error
+        try:
+            run_repo.update_run_status(run.run_id, RunStatus.FAILED)
+        except Exception as status_error:
+            print(f"Error: Failed to update run status to FAILED: {status_error}")
+            # Continue to raise original exception
         raise RuntimeError(f"Failed to complete simulation run {run.run_id}: {e}") from e
     print(f"Simulation run {run.run_id} completed in {run.total_turns} turns.")
 
