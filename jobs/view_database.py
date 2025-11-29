@@ -1,6 +1,7 @@
 """Simple script to view all profiles and posts in the database."""
 
-from db.db import read_all_feed_posts, read_all_profiles
+from db.db import read_all_feed_posts
+from db.repositories.profile_repository import create_sqlite_profile_repository
 
 
 def print_profile(profile):
@@ -38,7 +39,8 @@ def main():
     print("=" * 80)
 
     # Read and display profiles
-    profiles = read_all_profiles()
+    profile_repo = create_sqlite_profile_repository()
+    profiles = profile_repo.list_profiles()
     print(f"\n📊 PROFILES ({len(profiles)} total)")
     print("=" * 80)
     

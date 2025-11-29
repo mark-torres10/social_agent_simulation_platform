@@ -1,6 +1,7 @@
 """Given the database of Bluesky profiles and feed posts, create a list of agents."""
 
-from db.db import read_all_profiles, read_all_feed_posts
+from db.repositories.profile_repository import create_sqlite_profile_repository
+from db.db import read_all_feed_posts
 from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from ai.agents import SocialMediaAgent
 from db.db import read_all_generated_bios
@@ -9,7 +10,8 @@ from db.db import read_all_generated_bios
 def create_initial_agents() -> list[SocialMediaAgent]:
     """Create a list of agents from the database of Bluesky profiles and feed
     posts and pass into the network."""
-    profiles: list[BlueskyProfile] = read_all_profiles()
+    profile_repo = create_sqlite_profile_repository()
+    profiles: list[BlueskyProfile] = profile_repo.list_profiles()
     feed_posts: list[BlueskyFeedPost] = read_all_feed_posts()
     generated_bios: list[GeneratedBio] = read_all_generated_bios()
 
