@@ -9,7 +9,8 @@ import os
 import sqlite3
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed, Run
+from db.exceptions import RunNotFoundError
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
@@ -74,6 +75,30 @@ def initialize_database() -> None:
                 created_at TEXT NOT NULL,
                 PRIMARY KEY (agent_handle, run_id, turn_number)
             )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS runs (
+                run_id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                total_turns INTEGER NOT NULL CHECK (total_turns > 0),
+                total_agents INTEGER NOT NULL CHECK (total_agents > 0),
+                started_at TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('running', 'completed', 'failed')),
+                completed_at TEXT NULL,
+                CHECK (
+                    (status = 'completed' AND completed_at IS NOT NULL AND completed_at >= started_at) OR
+                    (status != 'completed' AND completed_at IS NULL)
+                )
+            )
+        """)
+        
+        # Create indexes for frequently queried columns
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at DESC)
         """)
 
         conn.commit()
@@ -198,6 +223,45 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
             feed.created_at,
         ))
         conn.commit()
+
+def write_run(run: Run) -> None:
+    """Write a run to the database.
+    
+    This function creates or replaces a single run record within 
+    its own transaction scope. If you need to perform multi-table 
+    operations that must succeed or fail together (e.g., creating a run
+    and related records in other tables), you are responsible for
+    managing the transaction boundaries externally. Use a single
+    database connection and control commit/rollback yourself in such cases,
+    or refactor to accept an existing connection.
+
+    Args:
+        run: Run model to write
+        
+    Raises:
+        sqlite3.IntegrityError: If run_id violates constraints
+        sqlite3.OperationalError: If database operation fails
+        
+    Note:
+        Uses INSERT OR REPLACE, so this will overwrite existing runs
+        with the same run_id.
+    """
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO runs 
+            (run_id, created_at, total_turns, total_agents, started_at, status, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            run.run_id,
+            run.created_at,
+            run.total_turns,
+            run.total_agents,
+            run.started_at,
+            run.status.value,  # Convert enum to string explicitly
+            run.completed_at,
+        ))
+        conn.commit()
+
 
 def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
     """Read a generated feed by agent_handle, run_id, and turn_number.
@@ -432,3 +496,118 @@ def load_feed_post_uris_from_current_run(
             WHERE agent_handle = ? AND run_id = ?
         """, (agent_handle, run_id)).fetchall()
         return {uri for row in rows for uri in json.loads(row["post_uris"])}
+
+
+def _row_to_run(row: sqlite3.Row) -> Run:
+    """Convert a database row to a Run model.
+    
+    Args:
+        row: SQLite Row object containing run data
+        
+    Returns:
+        Run model instance
+        
+    Raises:
+        ValueError: If required fields are NULL or status is invalid
+        KeyError: If required columns are missing from row
+    """
+    from db.models import RunStatus
+    
+    # Validate required fields are not NULL
+    if row["run_id"] is None:
+        raise ValueError("run_id cannot be NULL")
+    if row["created_at"] is None:
+        raise ValueError("created_at cannot be NULL")
+    if row["total_turns"] is None:
+        raise ValueError("total_turns cannot be NULL")
+    if row["total_agents"] is None:
+        raise ValueError("total_agents cannot be NULL")
+    if row["started_at"] is None:
+        raise ValueError("started_at cannot be NULL")
+    if row["status"] is None:
+        raise ValueError("status cannot be NULL")
+    
+    # Convert status string to RunStatus enum, handling invalid values
+    try:
+        status = RunStatus(row["status"])
+    except ValueError as err:
+        raise ValueError(f"Invalid status value: {row['status']}. Must be one of: {[s.value for s in RunStatus]}") from err
+    
+    return Run(
+        run_id=row["run_id"],
+        created_at=row["created_at"],
+        total_turns=row["total_turns"],
+        total_agents=row["total_agents"],
+        started_at=row["started_at"],
+        status=status,
+        completed_at=row["completed_at"],
+    )
+
+
+def read_run(run_id: str) -> Optional[Run]:
+    """Read a run by run_id.
+    
+    Args:
+        run_id: Unique identifier for the run
+        
+    Returns:
+        Run model if found, None otherwise
+        
+    Raises:
+        ValueError: If the run data is invalid (NULL fields, invalid status)
+        sqlite3.OperationalError: If database operation fails
+        KeyError: If required columns are missing from the database row
+    """
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM runs WHERE run_id = ?",
+            (run_id,)
+        ).fetchone()
+        
+        if row is None:
+            return None
+            
+        return _row_to_run(row)
+
+def read_all_runs() -> list[Run]:
+    """Read all runs, ordered by created_at descending.
+    
+    Returns:
+        List of Run models, ordered by created_at descending (newest first).
+        Returns empty list if no runs exist.
+        
+    Raises:
+        ValueError: If any run data is invalid (NULL fields, invalid status)
+        sqlite3.OperationalError: If database operation fails
+        KeyError: If required columns are missing from any database row
+    """
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM runs ORDER BY created_at DESC"
+        ).fetchall()
+        
+        return [_row_to_run(row) for row in rows]
+
+def update_run_status(run_id: str, status: str, completed_at: Optional[str] = None) -> None:
+    """Update a run's status.
+    
+    Args:
+        run_id: Unique identifier for the run to update
+        status: New status value (should be a valid RunStatus enum value as string)
+        completed_at: Optional timestamp when the run was completed.
+                     Should be set when status is 'completed', None otherwise.
+    
+    Raises:
+        RunNotFoundError: If no run exists with the given run_id
+        sqlite3.OperationalError: If database operation fails
+        sqlite3.IntegrityError: If status value violates CHECK constraints
+    """
+    with get_connection() as conn:
+        cursor = conn.execute("""
+            UPDATE runs 
+            SET status = ?, completed_at = ?
+            WHERE run_id = ?
+        """, (status, completed_at, run_id))
+        if cursor.rowcount == 0:
+            raise RunNotFoundError(run_id)
+        conn.commit()
