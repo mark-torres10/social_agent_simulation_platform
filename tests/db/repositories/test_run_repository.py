@@ -612,8 +612,8 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         # Assert
         mock_adapter.update_run_status.assert_called_once_with(run_id, status.value, timestamp1)
     
-    def test_handles_all_run_status_values(self):
-        """Test that update_run_status handles all RunStatus enum values correctly."""
+    def test_handles_valid_transitions_from_running(self):
+        """Test that update_run_status handles all valid transitions from RUNNING status."""
         # Arrange
         mock_adapter = Mock(spec=RunDatabaseAdapter)
         mock_get_timestamp = Mock(return_value="2024_01_01-13:00:00")
@@ -629,7 +629,10 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
             completed_at=None
         )
         
-        for status in RunStatus:
+        # Valid transitions from RUNNING: idempotent (RUNNING), COMPLETED, and FAILED
+        valid_target_statuses = [RunStatus.RUNNING, RunStatus.COMPLETED, RunStatus.FAILED]
+        
+        for status in valid_target_statuses:
             mock_adapter.read_run.return_value = current_run
             mock_adapter.update_run_status.reset_mock()
             # Act
