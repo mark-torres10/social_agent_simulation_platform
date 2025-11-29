@@ -25,7 +25,7 @@ class RunRepository(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def update_run_status(self, run_id: str, status: str) -> None:
+    def update_run_status(self, run_id: str, status: RunStatus) -> None:
         """Update a run's status."""
         raise NotImplementedError
 
@@ -67,7 +67,9 @@ class SQLiteRunRepository(RunRepository):
         from db.db import read_all_runs
         return read_all_runs()
     
-    def update_run_status(self, run_id: str, status: str) -> None:
+    def update_run_status(self, run_id: str, status: RunStatus) -> None:
         """Update run status in SQLite."""
         from db.db import update_run_status
-        update_run_status(run_id, status)
+        ts = get_current_timestamp()
+        completed_at = ts if status == RunStatus.COMPLETED else None
+        update_run_status(run_id, status, completed_at)
