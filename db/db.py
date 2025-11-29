@@ -83,7 +83,7 @@ def initialize_database() -> None:
                 total_turns INTEGER NOT NULL,
                 total_agents INTEGER NOT NULL,
                 started_at TEXT NOT NULL,
-                status TEXT NOT NUL CHECK(status IN ('running', 'completed', 'failed')),
+                status TEXT NOT NULL CHECK(status IN ('running', 'completed', 'failed')),
                 completed_at TEXT NULL,
                 CHECK (completed_at IS NULL OR status = 'completed')
                 CHECK (completed_at IS NULL OR completed_at >= started_at)
@@ -552,7 +552,7 @@ def read_run(run_id: str) -> Optional[Run]:
         run_id: Unique identifier for the run
         
     Returns:
-        Run model if found, None if no run exists with the given run_id
+        Run model if found, None otherwise
         
     Raises:
         ValueError: If the run data is invalid (NULL fields, invalid status)
