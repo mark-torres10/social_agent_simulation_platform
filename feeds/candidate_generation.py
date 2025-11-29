@@ -1,9 +1,9 @@
 """Generate candidate posts for the feeds."""
 
 from ai.agents import SocialMediaAgent
-from db.db import load_feed_post_uris_from_current_run
 from db.models import BlueskyFeedPost
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
 
 
 # TODO: we can get arbitrarily complex with how we do this later
@@ -22,7 +22,8 @@ def load_seen_post_uris(
     
     Returns a set of URIs.
     """
-    return load_feed_post_uris_from_current_run(
+    generated_feed_repo = create_sqlite_generated_feed_repository()
+    return generated_feed_repo.get_post_uris_for_run(
         agent_handle=agent.handle,
         run_id=run_id
     )

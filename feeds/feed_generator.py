@@ -68,8 +68,15 @@ def generate_feeds(
         feeds[agent.handle] = feed
 
     # now iterate through all the feeds and hydrate the posts.
-    # TODO: again, not efficient since this also loads ALL the posts.
-    # but we can come back to efficiency later.
+    # PERFORMANCE NOTE: This loads ALL posts into memory, which is inefficient
+    # for large datasets. This approach is acceptable for small-scale simulations
+    # but should be optimized when the dataset grows beyond ~10K posts. Potential
+    # optimizations include:
+    # - Batch queries: Query posts by URI sets instead of loading all
+    # - Pagination: Process feeds in batches
+    # - Caching: Cache frequently accessed posts
+    # - Database indexes: Ensure proper indexes on uri column
+    # TODO: Optimize when post count exceeds 10K or performance degrades
     feed_post_repo = create_sqlite_feed_post_repository()
     all_posts = feed_post_repo.list_all_feed_posts()
     uri_to_post = {p.uri: p for p in all_posts}
