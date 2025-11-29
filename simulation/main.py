@@ -4,7 +4,7 @@ from ai.agents import SocialMediaAgent, record_agent_actions
 from ai.create_initial_agents import create_initial_agents
 from db.db import initialize_database
 from db.models import BlueskyFeedPost, RunConfig, Run, RunStatus
-from db.repository import RunRepository
+from db.repositories.run_repository import RunRepository
 from feeds.feed_generator import generate_feeds
 
 def simulate_turn(agents: list[SocialMediaAgent], run_id: str, turn_number: int) -> dict:
@@ -75,7 +75,7 @@ def main():
     """CLI entry point - creates repository and runs simulation."""
     initialize_database()
 
-    from db.repository import SQLiteRunRepository
+    from db.repositories.run_repository import SQLiteRunRepository
     run_repo = SQLiteRunRepository()
 
     config = RunConfig(
