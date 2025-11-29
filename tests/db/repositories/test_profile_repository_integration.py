@@ -9,7 +9,7 @@ import os
 
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from db.models import BlueskyProfile
-from db.db import initialize_database, get_connection, DB_PATH
+from db.db import initialize_database, DB_PATH
 
 
 @pytest.fixture
