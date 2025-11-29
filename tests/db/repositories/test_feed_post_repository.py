@@ -213,6 +213,18 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
         assert result == []
         mock_adapter.write_feed_posts.assert_called_once_with(posts)
     
+    def test_raises_value_error_when_posts_is_none(self):
+        """Test that create_or_update_feed_posts raises ValueError when posts is None."""
+        # Arrange
+        mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
+        repo = SQLiteFeedPostRepository(mock_adapter)
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="posts cannot be None"):
+            repo.create_or_update_feed_posts(None)  # type: ignore
+        
+        mock_adapter.write_feed_posts.assert_not_called()
+    
     def test_raises_value_error_when_any_uri_is_empty(self):
         """Test that create_or_update_feed_posts raises ValueError when any uri is empty."""
         # Arrange
