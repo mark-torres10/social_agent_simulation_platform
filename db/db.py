@@ -89,6 +89,15 @@ def initialize_database() -> None:
                 CHECK (completed_at IS NULL OR completed_at >= started_at)
             )
         """)
+        
+        # Create indexes for frequently queried columns
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at DESC)
+        """)
+
         conn.commit()
 
 
@@ -213,20 +222,26 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
         conn.commit()
 
 def write_run(run: Run) -> None:
-    """
-    Write a run to the database.
-
-    Note:
-        This function creates or replaces a single run record within 
-        its own transaction scope. If you need to perform multi-table 
-        operations that must succeed or fail together (e.g., creating a run
-        and related records in other tables), you are responsible for
-        managing the transaction boundaries externally. Use a single
-        database connection and control commit/rollback yourself in such cases,
-        or refactor to accept an existing connection.
+    """Write a run to the database.
+    
+    This function creates or replaces a single run record within 
+    its own transaction scope. If you need to perform multi-table 
+    operations that must succeed or fail together (e.g., creating a run
+    and related records in other tables), you are responsible for
+    managing the transaction boundaries externally. Use a single
+    database connection and control commit/rollback yourself in such cases,
+    or refactor to accept an existing connection.
 
     Args:
-        run: Run model to write.
+        run: Run model to write
+        
+    Raises:
+        sqlite3.IntegrityError: If run_id violates constraints
+        sqlite3.OperationalError: If database operation fails
+        
+    Note:
+        Uses INSERT OR REPLACE, so this will overwrite existing runs
+        with the same run_id.
     """
     with get_connection() as conn:
         try:
@@ -240,7 +255,7 @@ def write_run(run: Run) -> None:
                 run.total_turns,
                 run.total_agents,
                 run.started_at,
-                run.status,
+                run.status.value,  # Convert enum to string explicitly
                 run.completed_at,
             ))
             conn.commit()
@@ -537,11 +552,12 @@ def read_run(run_id: str) -> Optional[Run]:
         run_id: Unique identifier for the run
         
     Returns:
-        Run model if found, None otherwise
+        Run model if found, None if no run exists with the given run_id
         
     Raises:
         ValueError: If the run data is invalid (NULL fields, invalid status)
         sqlite3.OperationalError: If database operation fails
+        KeyError: If required columns are missing from the database row
     """
     with get_connection() as conn:
         row = conn.execute(
@@ -558,11 +574,13 @@ def read_all_runs() -> list[Run]:
     """Read all runs, ordered by created_at descending.
     
     Returns:
-        List of Run models, ordered by created_at descending
+        List of Run models, ordered by created_at descending (newest first).
+        Returns empty list if no runs exist.
         
     Raises:
         ValueError: If any run data is invalid (NULL fields, invalid status)
         sqlite3.OperationalError: If database operation fails
+        KeyError: If required columns are missing from any database row
     """
     with get_connection() as conn:
         rows = conn.execute(
@@ -572,7 +590,19 @@ def read_all_runs() -> list[Run]:
         return [_row_to_run(row) for row in rows]
 
 def update_run_status(run_id: str, status: str, completed_at: Optional[str] = None) -> None:
-    """Update a run's status."""
+    """Update a run's status.
+    
+    Args:
+        run_id: Unique identifier for the run to update
+        status: New status value (should be a valid RunStatus enum value as string)
+        completed_at: Optional timestamp when the run was completed.
+                     Should be set when status is 'completed', None otherwise.
+    
+    Raises:
+        ValueError: If no run exists with the given run_id
+        sqlite3.OperationalError: If database operation fails
+        sqlite3.IntegrityError: If status value violates CHECK constraints
+    """
     with get_connection() as conn:
         try:
             cursor = conn.execute("""
