@@ -114,7 +114,7 @@ def create_sqlite_profile_repository() -> SQLiteProfileRepository:
     Returns:
         SQLiteProfileRepository configured with SQLite adapter
     """
-    from db.adapters.profile_adapter import SQLiteProfileAdapter
+    from db.adapters.sqlite import SQLiteProfileAdapter
     return SQLiteProfileRepository(
         db_adapter=SQLiteProfileAdapter()
     )
