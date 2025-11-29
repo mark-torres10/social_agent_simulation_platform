@@ -6,6 +6,7 @@ These tests use a real SQLite database to test end-to-end functionality.
 import pytest
 import tempfile
 import os
+import time
 
 from db.repositories.run_repository import SQLiteRunRepository
 from db.models import RunConfig, Run, RunStatus
@@ -102,9 +103,11 @@ class TestSQLiteRunRepositoryIntegration:
         """Test that list_runs returns all runs in correct order."""
         repo = SQLiteRunRepository()
         
-        # Create multiple runs
+        # Create multiple runs with delays to ensure distinct timestamps
         run1 = repo.create_run(RunConfig(num_agents=1, num_turns=1))
+        time.sleep(1.1)  # Ensure different timestamp (format is down to seconds)
         run2 = repo.create_run(RunConfig(num_agents=2, num_turns=2))
+        time.sleep(1.1)
         run3 = repo.create_run(RunConfig(num_agents=3, num_turns=3))
         
         # List runs (should be ordered by created_at DESC, so newest first)
@@ -113,9 +116,8 @@ class TestSQLiteRunRepositoryIntegration:
         assert len(runs) >= 3
         # Verify ordering (newest first)
         run_ids = [r.run_id for r in runs[:3]]
-        assert run3.run_id in run_ids
-        assert run2.run_id in run_ids
-        assert run1.run_id in run_ids
+        expected_order = [run3.run_id, run2.run_id, run1.run_id]
+        assert run_ids == expected_order
 
 
 class TestRunStatusEnumSerialization:
@@ -194,7 +196,6 @@ class TestConcurrentRunCreation:
     def test_concurrent_run_creation_generates_unique_ids(self, temp_db):
         """Test that concurrent run creation generates unique run IDs."""
         import threading
-        import time
         
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=1, num_turns=1)
@@ -224,6 +225,39 @@ class TestConcurrentRunCreation:
         assert len(set(run_ids)) == 10
 
 
+def _create_mock_row(**overrides):
+    """Helper function to create a MockRow that mimics sqlite3.Row behavior.
+    
+    Args:
+        **overrides: Dictionary of field overrides to apply to default values.
+    
+    Returns:
+        MockRow instance with __getitem__ and keys methods.
+    """
+    default_data = {
+        "run_id": "test_run",
+        "created_at": "2024_01_01-12:00:00",
+        "total_turns": 5,
+        "total_agents": 3,
+        "started_at": "2024_01_01-12:00:00",
+        "status": "running",
+        "completed_at": None
+    }
+    default_data.update(overrides)
+    
+    class MockRow:
+        def __init__(self, data):
+            self._data = data
+        
+        def __getitem__(self, key):
+            return self._data[key]
+        
+        def keys(self):
+            return list(self._data.keys())
+    
+    return MockRow(default_data)
+
+
 class TestNullabilityValidation:
     """Tests for nullability validation when reading runs."""
     
@@ -231,26 +265,7 @@ class TestNullabilityValidation:
         """Test that NULL run_id raises ValueError."""
         from db.db import _row_to_run
         
-        # Create a simple class that mimics sqlite3.Row behavior
-        class MockRow:
-            def __init__(self):
-                self._data = {
-                    "run_id": None,  # NULL run_id
-                    "created_at": "2024_01_01-12:00:00",
-                    "total_turns": 5,
-                    "total_agents": 3,
-                    "started_at": "2024_01_01-12:00:00",
-                    "status": "running",
-                    "completed_at": None
-                }
-            
-            def __getitem__(self, key):
-                return self._data[key]
-            
-            def keys(self):
-                return list(self._data.keys())
-        
-        mock_row = MockRow()
+        mock_row = _create_mock_row(run_id=None)
         
         with pytest.raises(ValueError, match="run_id cannot be NULL"):
             _row_to_run(mock_row)
@@ -259,26 +274,7 @@ class TestNullabilityValidation:
         """Test that NULL status raises ValueError."""
         from db.db import _row_to_run
         
-        # Create a simple class that mimics sqlite3.Row behavior
-        class MockRow:
-            def __init__(self):
-                self._data = {
-                    "run_id": "test_run",
-                    "created_at": "2024_01_01-12:00:00",
-                    "total_turns": 5,
-                    "total_agents": 3,
-                    "started_at": "2024_01_01-12:00:00",
-                    "status": None,  # NULL status
-                    "completed_at": None
-                }
-            
-            def __getitem__(self, key):
-                return self._data[key]
-            
-            def keys(self):
-                return list(self._data.keys())
-        
-        mock_row = MockRow()
+        mock_row = _create_mock_row(status=None)
         
         with pytest.raises(ValueError, match="status cannot be NULL"):
             _row_to_run(mock_row)

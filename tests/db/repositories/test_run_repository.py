@@ -32,7 +32,7 @@ class TestSQLiteRunRepositoryCreateRun:
                     assert result.total_agents == 5
                     assert result.started_at == expected_timestamp
                     assert result.status == RunStatus.RUNNING
-                    assert result.completed_at == None
+                    assert result.completed_at is None
     
     def test_creates_run_with_different_config_values(self):
         """Test that create_run handles different configuration values correctly."""
