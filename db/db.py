@@ -136,6 +136,10 @@ def write_feed_post(post: BlueskyFeedPost) -> None:
     
     Args:
         post: BlueskyFeedPost model to write
+        
+    Raises:
+        sqlite3.IntegrityError: If uri violates constraints
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         conn.execute("""
@@ -163,6 +167,10 @@ def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
     
     Args:
         posts: List of BlueskyFeedPost models to write
+        
+    Raises:
+        sqlite3.IntegrityError: If any uri violates constraints
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         conn.executemany("""
@@ -300,6 +308,40 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
             created_at=row["created_at"],
         )
 
+
+def _validate_feed_post_row(row: sqlite3.Row, context: str | None = None) -> None:
+    """Validate that all required feed post fields are not NULL.
+    
+    Args:
+        row: SQLite Row object containing feed post data
+        context: Optional context string to include in error messages
+                 (e.g., "feed post uri=at://did:plc:.../app.bsky.feed.post/...")
+    
+    Raises:
+        ValueError: If any required field is NULL. Error message includes
+                    the field name and optional context.
+    """
+    required_fields = [
+        "uri",
+        "author_display_name",
+        "author_handle",
+        "text",
+        "bookmark_count",
+        "like_count",
+        "quote_count",
+        "reply_count",
+        "repost_count",
+        "created_at",
+    ]
+    
+    for field in required_fields:
+        if row[field] is None:
+            error_msg = f"{field} cannot be NULL"
+            if context:
+                error_msg = f"{error_msg} (context: {context})"
+            raise ValueError(error_msg)
+
+
 def read_profile(handle: str) -> Optional[BlueskyProfile]:
     """Read a Bluesky profile by handle.
     
@@ -403,6 +445,11 @@ def read_feed_post(uri: str) -> Optional[BlueskyFeedPost]:
         
     Returns:
         BlueskyFeedPost if found, None otherwise
+        
+    Raises:
+        ValueError: If the feed post data is invalid (NULL fields)
+        KeyError: If required columns are missing from the database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         row = conn.execute(
@@ -412,6 +459,10 @@ def read_feed_post(uri: str) -> Optional[BlueskyFeedPost]:
         
         if row is None:
             return None
+        
+        # Validate required fields are not NULL
+        context = f"feed post uri={uri}"
+        _validate_feed_post_row(row, context=context)
         
         return BlueskyFeedPost(
             uri=row["uri"],
@@ -435,6 +486,11 @@ def read_feed_posts_by_author(author_handle: str) -> list[BlueskyFeedPost]:
         
     Returns:
         List of BlueskyFeedPost models for the author
+        
+    Raises:
+        ValueError: If any feed post data is invalid (NULL fields)
+        KeyError: If required columns are missing from any database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         rows = conn.execute(
@@ -442,8 +498,19 @@ def read_feed_posts_by_author(author_handle: str) -> list[BlueskyFeedPost]:
             (author_handle,)
         ).fetchall()
         
-        return [
-            BlueskyFeedPost(
+        posts = []
+        for row in rows:
+            # Validate required fields are not NULL
+            # Try to get uri for context, fallback if uri itself is NULL
+            try:
+                uri_value = row["uri"] if row["uri"] is not None else "unknown"
+                context = f"feed post uri={uri_value}, author_handle={author_handle}"
+            except (KeyError, TypeError):
+                context = f"feed post (uri unavailable), author_handle={author_handle}"
+            
+            _validate_feed_post_row(row, context=context)
+            
+            posts.append(BlueskyFeedPost(
                 uri=row["uri"],
                 author_display_name=row["author_display_name"],
                 author_handle=row["author_handle"],
@@ -454,9 +521,9 @@ def read_feed_posts_by_author(author_handle: str) -> list[BlueskyFeedPost]:
                 reply_count=row["reply_count"],
                 repost_count=row["repost_count"],
                 created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+            ))
+        
+        return posts
 
 
 def read_all_feed_posts() -> list[BlueskyFeedPost]:
@@ -464,12 +531,28 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
     
     Returns:
         List of all BlueskyFeedPost models
+        
+    Raises:
+        ValueError: If any feed post data is invalid (NULL fields)
+        KeyError: If required columns are missing from any database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM bluesky_feed_posts").fetchall()
         
-        return [
-            BlueskyFeedPost(
+        posts = []
+        for row in rows:
+            # Validate required fields are not NULL
+            # Try to get uri for context, fallback if uri itself is NULL
+            try:
+                uri_value = row["uri"] if row["uri"] is not None else "unknown"
+                context = f"feed post uri={uri_value}"
+            except (KeyError, TypeError):
+                context = "feed post (uri unavailable)"
+            
+            _validate_feed_post_row(row, context=context)
+            
+            posts.append(BlueskyFeedPost(
                 uri=row["uri"],
                 author_display_name=row["author_display_name"],
                 author_handle=row["author_handle"],
@@ -480,9 +563,9 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
                 reply_count=row["reply_count"],
                 repost_count=row["repost_count"],
                 created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+            ))
+        
+        return posts
 
 
 def read_all_generated_bios() -> list[GeneratedBio]:

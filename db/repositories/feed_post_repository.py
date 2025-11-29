@@ -1,0 +1,179 @@
+"""Abstraction for feed post repositories."""
+
+from abc import ABC, abstractmethod
+from typing import Optional
+
+from db.adapters.base import FeedPostDatabaseAdapter
+from db.models import BlueskyFeedPost
+
+
+class FeedPostRepository(ABC):
+    """Abstract base class defining the interface for feed post repositories."""
+    
+    @abstractmethod
+    def create_or_update_feed_post(self, post: BlueskyFeedPost) -> BlueskyFeedPost:
+        """Create or update a feed post.
+        
+        Args:
+            post: BlueskyFeedPost model to create or update
+            
+        Returns:
+            The created or updated BlueskyFeedPost object
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def create_or_update_feed_posts(self, posts: list[BlueskyFeedPost]) -> list[BlueskyFeedPost]:
+        """Create or update multiple feed posts (batch operation).
+        
+        Args:
+            posts: List of BlueskyFeedPost models to create or update
+            
+        Returns:
+            List of created or updated BlueskyFeedPost objects
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def get_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+        """Get a feed post by URI.
+        
+        Args:
+            uri: Post URI to look up
+            
+        Returns:
+            BlueskyFeedPost model if found, None otherwise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def list_feed_posts_by_author(self, author_handle: str) -> list[BlueskyFeedPost]:
+        """List all feed posts by a specific author.
+        
+        Args:
+            author_handle: Author handle to filter by
+            
+        Returns:
+            List of BlueskyFeedPost models for the author.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def list_all_feed_posts(self) -> list[BlueskyFeedPost]:
+        """List all feed posts.
+        
+        Returns:
+            List of all BlueskyFeedPost models.
+        """
+        raise NotImplementedError
+
+
+class SQLiteFeedPostRepository(FeedPostRepository):
+    """SQLite implementation of FeedPostRepository.
+    
+    Uses dependency injection to accept a database adapter,
+    decoupling it from concrete implementations.
+    """
+    
+    def __init__(self, db_adapter: FeedPostDatabaseAdapter):
+        """Initialize repository with injected dependencies.
+        
+        Args:
+            db_adapter: Database adapter for feed post operations
+        """
+        self._db_adapter = db_adapter
+    
+    def create_or_update_feed_post(self, post: BlueskyFeedPost) -> BlueskyFeedPost:
+        """Create or update a feed post in SQLite.
+        
+        Args:
+            post: BlueskyFeedPost model to create or update
+            
+        Returns:
+            The created or updated BlueskyFeedPost object
+            
+        Raises:
+            ValueError: If post.uri is empty
+            sqlite3.IntegrityError: If uri violates constraints (from adapter)
+            sqlite3.OperationalError: If database operation fails (from adapter)
+        """
+        if not post.uri or not post.uri.strip():
+            raise ValueError("post.uri cannot be empty")
+        
+        self._db_adapter.write_feed_post(post)
+        return post
+    
+    def create_or_update_feed_posts(self, posts: list[BlueskyFeedPost]) -> list[BlueskyFeedPost]:
+        """Create or update multiple feed posts in SQLite (batch operation).
+        
+        Args:
+            posts: List of BlueskyFeedPost models to create or update
+            
+        Returns:
+            List of created or updated BlueskyFeedPost objects
+            
+        Raises:
+            ValueError: If any post.uri is empty
+            sqlite3.IntegrityError: If any uri violates constraints (from adapter)
+            sqlite3.OperationalError: If database operation fails (from adapter)
+        """
+        # Validate all URIs before writing
+        for post in posts:
+            if not post.uri or not post.uri.strip():
+                raise ValueError("post.uri cannot be empty")
+        
+        self._db_adapter.write_feed_posts(posts)
+        return posts
+    
+    def get_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+        """Get a feed post from SQLite.
+        
+        Args:
+            uri: Post URI to look up
+            
+        Returns:
+            BlueskyFeedPost model if found, None otherwise.
+            
+        Raises:
+            ValueError: If uri is empty or None
+        """
+        if not uri or not uri.strip():
+            raise ValueError("uri cannot be empty")
+        return self._db_adapter.read_feed_post(uri)
+    
+    def list_feed_posts_by_author(self, author_handle: str) -> list[BlueskyFeedPost]:
+        """List all feed posts by a specific author from SQLite.
+        
+        Args:
+            author_handle: Author handle to filter by
+            
+        Returns:
+            List of BlueskyFeedPost models for the author.
+            
+        Raises:
+            ValueError: If author_handle is empty or None
+        """
+        if not author_handle or not author_handle.strip():
+            raise ValueError("author_handle cannot be empty")
+        return self._db_adapter.read_feed_posts_by_author(author_handle)
+    
+    def list_all_feed_posts(self) -> list[BlueskyFeedPost]:
+        """List all feed posts from SQLite.
+        
+        Returns:
+            List of all BlueskyFeedPost models.
+        """
+        return self._db_adapter.read_all_feed_posts()
+
+
+def create_sqlite_feed_post_repository() -> SQLiteFeedPostRepository:
+    """Factory function to create a SQLiteFeedPostRepository with default dependencies.
+    
+    Returns:
+        SQLiteFeedPostRepository configured with SQLite adapter
+    """
+    from db.adapters.sqlite import SQLiteFeedPostAdapter
+    return SQLiteFeedPostRepository(
+        db_adapter=SQLiteFeedPostAdapter()
+    )
+

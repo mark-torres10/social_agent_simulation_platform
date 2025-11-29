@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from db.db import initialize_database, read_all_feed_posts, read_all_generated_bios, write_generated_bio_to_database
+from db.db import initialize_database, read_all_generated_bios, write_generated_bio_to_database
+from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from lib.langfuse_telemetry import get_langfuse_client, log_llm_request
@@ -121,8 +122,9 @@ def main():
     initialize_database()
     print("Reading profiles and feed posts from database...")
     profile_repo = create_sqlite_profile_repository()
+    feed_post_repo = create_sqlite_feed_post_repository()
     profiles: list[BlueskyProfile] = profile_repo.list_profiles()
-    feed_posts: list[BlueskyFeedPost] = read_all_feed_posts()
+    feed_posts: list[BlueskyFeedPost] = feed_post_repo.list_all_feed_posts()
     posts_by_author: dict[str, list[BlueskyFeedPost]] = {}
     for post in feed_posts:
         posts_by_author.setdefault(post.author_handle, []).append(post)
