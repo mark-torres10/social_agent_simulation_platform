@@ -9,7 +9,7 @@ import os
 import sqlite3
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed, Run
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
@@ -73,6 +73,19 @@ def initialize_database() -> None:
                 post_uris TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 PRIMARY KEY (agent_handle, run_id, turn_number)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS runs (
+                run_id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                total_turns INTEGER NOT NULL,
+                total_agents INTEGER NOT NULL,
+                started_at TEXT NOT NULL,
+                status TEXT NOT NULL
+                completed_at TEXT NULL,
+                PRIMARY KEY (run_id)
             )
         """)
 
@@ -198,6 +211,25 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
             feed.created_at,
         ))
         conn.commit()
+
+def write_run(run: Run) -> None:
+    """Write a run to the database."""
+    with get_connection() as conn:
+        conn.execute("""
+            INSERT OR REPLACE INTO runs 
+            (run_id, created_at, total_turns, total_agents, started_at, status, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            run.run_id,
+            run.created_at,
+            run.total_turns,
+            run.total_agents,
+            run.started_at,
+            run.status,
+            run.completed_at,
+        ))
+        conn.commit()
+
 
 def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
     """Read a generated feed by agent_handle, run_id, and turn_number.
@@ -432,3 +464,55 @@ def load_feed_post_uris_from_current_run(
             WHERE agent_handle = ? AND run_id = ?
         """, (agent_handle, run_id)).fetchall()
         return {uri for row in rows for uri in json.loads(row["post_uris"])}
+
+
+def read_run(run_id: str) -> Optional[Run]:
+    """Read a run by run_id."""
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM runs WHERE run_id = ?",
+            (run_id,)
+        ).fetchone()
+        
+        if row is None:
+            return None
+            
+        return Run(
+            run_id=row["run_id"],
+            created_at=row["created_at"],
+            total_turns=row["total_turns"],
+            total_agents=row["total_agents"],
+            started_at=row["started_at"],
+            status=row["status"],
+            completed_at=row["completed_at"],
+        )
+
+def read_all_runs() -> list[Run]:
+    """Read all runs, ordered by created_at descending."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM runs ORDER BY created_at DESC"
+        ).fetchall()
+        
+        return [
+            Run(
+                run_id=row["run_id"],
+                created_at=row["created_at"],
+                total_turns=row["total_turns"],
+                total_agents=row["total_agents"],
+                started_at=row["started_at"],
+                status=row["status"],
+                completed_at=row["completed_at"],
+            )
+            for row in rows
+        ]
+
+def update_run_status(run_id: str, status: str, completed_at: Optional[str] = None) -> None:
+    """Update a run's status."""
+    with get_connection() as conn:
+        conn.execute("""
+            UPDATE runs 
+            SET status = ?, completed_at = ?
+            WHERE run_id = ?
+        """, (status, completed_at, run_id))
+        conn.commit()
