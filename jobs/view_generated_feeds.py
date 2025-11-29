@@ -2,7 +2,7 @@
 
 from collections import Counter
 
-from db.db import read_all_generated_feeds
+from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
 
 
 def main():
@@ -11,7 +11,8 @@ def main():
     print("=" * 80)
 
     # Read all generated feeds
-    feeds = read_all_generated_feeds()
+    generated_feed_repo = create_sqlite_generated_feed_repository()
+    feeds = generated_feed_repo.list_all_generated_feeds()
     
     # 1. Total number of generated feeds
     total_feeds = len(feeds)

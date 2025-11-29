@@ -1,7 +1,7 @@
 from ai.agents import SocialMediaAgent
 from db.models import GeneratedFeed, BlueskyFeedPost
-from db.db import write_generated_feed
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
 from feeds.algorithms import generate_chronological_feed
 from feeds.candidate_generation import load_candidate_posts
 from lib.utils import get_current_timestamp
@@ -49,6 +49,7 @@ def generate_feeds(
     4. Returns a dictionary of agent handles to lists of hydrated BlueskyFeedPost models.
     """
     feeds: dict[str, GeneratedFeed] = {}
+    generated_feed_repo = create_sqlite_generated_feed_repository()
     for agent in agents:
         # TODO: right now we load all posts per agent, but obviously
         # can optimize and personalize later to save on queries.
@@ -63,7 +64,7 @@ def generate_feeds(
             turn_number=turn_number,
             feed_type=feed_type
         )
-        write_generated_feed(feed)
+        generated_feed_repo.create_or_update_generated_feed(feed)
         feeds[agent.handle] = feed
 
     # now iterate through all the feeds and hydrate the posts.
