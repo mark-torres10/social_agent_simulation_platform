@@ -1,7 +1,7 @@
 """Tests for db.repositories.run_repository module."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from db.repositories.run_repository import SQLiteRunRepository
 from db.models import RunConfig, Run, RunStatus
 
@@ -11,50 +11,48 @@ class TestSQLiteRunRepositoryCreateRun:
     
     def test_creates_run_with_correct_config_values(self):
         """Test that create_run creates a run with correct configuration values."""
+        import uuid
         # Arrange
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=5, num_turns=10)
         expected_timestamp = "2024_01_01-12:00:00"
+        mock_uuid = uuid.UUID('12345678-1234-5678-9012-123456789012')
         
         with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
-            with patch("db.db.write_run") as mock_write:
-                # Act
-                result = repo.create_run(config)
-                
-                # Assert
-                expected = Run(
-                    run_id=f"run_{expected_timestamp}",
-                    created_at=expected_timestamp,
-                    total_turns=10,
-                    total_agents=5,
-                    started_at=expected_timestamp,
-                    status=RunStatus.RUNNING,
-                    completed_at=None
-                )
-                assert result.run_id == expected.run_id
-                assert result.created_at == expected.created_at
-                assert result.total_turns == expected.total_turns
-                assert result.total_agents == expected.total_agents
-                assert result.started_at == expected.started_at
-                assert result.status == expected.status
-                assert result.completed_at == expected.completed_at
+            with patch("db.repositories.run_repository.uuid.uuid4", return_value=mock_uuid):
+                with patch("db.db.write_run") as mock_write:
+                    # Act
+                    result = repo.create_run(config)
+                    
+                    # Assert
+                    expected_run_id = f"run_{expected_timestamp}_{mock_uuid}"
+                    assert result.run_id == expected_run_id
+                    assert result.created_at == expected_timestamp
+                    assert result.total_turns == 10
+                    assert result.total_agents == 5
+                    assert result.started_at == expected_timestamp
+                    assert result.status == RunStatus.RUNNING
+                    assert result.completed_at == None
     
     def test_creates_run_with_different_config_values(self):
         """Test that create_run handles different configuration values correctly."""
+        import uuid
         # Arrange
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=20, num_turns=50)
         expected_timestamp = "2024_02_15-15:30:45"
+        mock_uuid = uuid.UUID('00000000-0000-0000-0000-000000000000')
         
         with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
-            with patch("db.db.write_run") as mock_write:
-                # Act
-                result = repo.create_run(config)
-                
-                # Assert
-                assert result.total_agents == 20
-                assert result.total_turns == 50
-                assert result.run_id == f"run_{expected_timestamp}"
+            with patch("db.repositories.run_repository.uuid.uuid4", return_value=mock_uuid):
+                with patch("db.db.write_run") as mock_write:
+                    # Act
+                    result = repo.create_run(config)
+                    
+                    # Assert
+                    assert result.total_agents == 20
+                    assert result.total_turns == 50
+                    assert result.run_id.startswith(f"run_{expected_timestamp}_")
     
     def test_persists_run_to_database(self):
         """Test that create_run persists the run to the database via write_run."""
@@ -78,23 +76,27 @@ class TestSQLiteRunRepositoryCreateRun:
                 assert call_args.status == RunStatus.RUNNING
     
     def test_generates_unique_run_id_with_timestamp(self):
-        """Test that create_run generates a unique run_id using timestamp."""
+        """Test that create_run generates a unique run_id using timestamp and UUID."""
+        import uuid
         # Arrange
         repo = SQLiteRunRepository()
         config = RunConfig(num_agents=5, num_turns=10)
         timestamp1 = "2024_01_01-12:00:00"
         timestamp2 = "2024_01_01-12:00:01"
+        uuid1 = uuid.UUID('11111111-1111-1111-1111-111111111111')
+        uuid2 = uuid.UUID('22222222-2222-2222-2222-222222222222')
         
         with patch("lib.utils.get_current_timestamp", side_effect=[timestamp1, timestamp2]):
-            with patch("db.db.write_run"):
-                # Act
-                result1 = repo.create_run(config)
-                result2 = repo.create_run(config)
-                
-                # Assert
-                assert result1.run_id == f"run_{timestamp1}"
-                assert result2.run_id == f"run_{timestamp2}"
-                assert result1.run_id != result2.run_id
+            with patch("db.repositories.run_repository.uuid.uuid4", side_effect=[uuid1, uuid2]):
+                with patch("db.db.write_run"):
+                    # Act
+                    result1 = repo.create_run(config)
+                    result2 = repo.create_run(config)
+                    
+                    # Assert
+                    assert result1.run_id == f"run_{timestamp1}_{uuid1}"
+                    assert result2.run_id == f"run_{timestamp2}_{uuid2}"
+                    assert result1.run_id != result2.run_id
     
     def test_sets_status_to_running_on_creation(self):
         """Test that create_run always sets status to RUNNING."""
@@ -414,7 +416,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         status = RunStatus.COMPLETED
         expected_timestamp = "2024_01_01-13:00:00"
         
-        with patch("db.repositories.run_repository.get_current_timestamp", return_value=expected_timestamp):
+        with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
             with patch("db.db.update_run_status") as mock_update:
                 # Act
                 repo.update_run_status(run_id, status)
@@ -434,7 +436,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         run_id = "run_123"
         status = RunStatus.FAILED
         
-        with patch("db.repositories.run_repository.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+        with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
             with patch("db.db.update_run_status") as mock_update:
                 # Act
                 repo.update_run_status(run_id, status)
@@ -449,7 +451,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         run_id = "run_123"
         status = RunStatus.RUNNING
         
-        with patch("db.repositories.run_repository.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+        with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
             with patch("db.db.update_run_status") as mock_update:
                 # Act
                 repo.update_run_status(run_id, status)
@@ -465,7 +467,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         status = RunStatus.COMPLETED
         expected_timestamp = "2024_01_01-13:00:00"
         
-        with patch("db.repositories.run_repository.get_current_timestamp", return_value=expected_timestamp):
+        with patch("lib.utils.get_current_timestamp", return_value=expected_timestamp):
             with patch("db.db.update_run_status") as mock_update:
                 # Act
                 repo.update_run_status(run_id, status)
@@ -505,7 +507,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         timestamp1 = "2024_01_01-13:00:00"
         timestamp2 = "2024_01_01-14:00:00"
         
-        with patch("db.repositories.run_repository.get_current_timestamp", side_effect=[timestamp1, timestamp2]):
+        with patch("lib.utils.get_current_timestamp", side_effect=[timestamp1, timestamp2]):
             with patch("db.db.update_run_status") as mock_update:
                 # Act
                 repo.update_run_status(run_id, status)
@@ -520,7 +522,7 @@ class TestSQLiteRunRepositoryUpdateRunStatus:
         run_id = "run_123"
         
         for status in RunStatus:
-            with patch("db.repositories.run_repository.get_current_timestamp", return_value="2024_01_01-13:00:00"):
+            with patch("lib.utils.get_current_timestamp", return_value="2024_01_01-13:00:00"):
                 with patch("db.db.update_run_status") as mock_update:
                     # Act
                     repo.update_run_status(run_id, status)
