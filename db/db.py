@@ -83,7 +83,7 @@ def initialize_database() -> None:
                 total_turns INTEGER NOT NULL,
                 total_agents INTEGER NOT NULL,
                 started_at TEXT NOT NULL,
-                status TEXT NOT NULL
+                status TEXT NOT NULL,
                 completed_at TEXT NULL,
                 PRIMARY KEY (run_id)
             )
