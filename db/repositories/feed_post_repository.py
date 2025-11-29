@@ -1,7 +1,6 @@
 """Abstraction for feed post repositories."""
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from db.adapters.base import FeedPostDatabaseAdapter
 from db.models import BlueskyFeedPost
@@ -35,14 +34,17 @@ class FeedPostRepository(ABC):
         raise NotImplementedError
     
     @abstractmethod
-    def get_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+    def get_feed_post(self, uri: str) -> BlueskyFeedPost:
         """Get a feed post by URI.
         
         Args:
             uri: Post URI to look up
             
         Returns:
-            BlueskyFeedPost model if found, None otherwise.
+            BlueskyFeedPost model if found.
+            
+        Raises:
+            ValueError: If uri is empty or if no feed post is found for the given URI
         """
         raise NotImplementedError
     
@@ -93,13 +95,11 @@ class SQLiteFeedPostRepository(FeedPostRepository):
             The created or updated BlueskyFeedPost object
             
         Raises:
-            ValueError: If uri is empty
+            ValueError: If uri is empty (validated by Pydantic model)
             sqlite3.IntegrityError: If uri violates constraints (from adapter)
             sqlite3.OperationalError: If database operation fails (from adapter)
         """
-        if not post.uri or not post.uri.strip():
-            raise ValueError("uri cannot be empty")
-        
+        # Validation is handled by Pydantic model (BlueskyFeedPost.validate_uri)
         self._db_adapter.write_feed_post(post)
         return post
     
@@ -115,35 +115,34 @@ class SQLiteFeedPostRepository(FeedPostRepository):
             List of created or updated BlueskyFeedPost objects
             
         Raises:
-            ValueError: If posts is None or if any uri is empty
+            ValueError: If posts is None or if any uri is empty (validated by Pydantic models)
             sqlite3.IntegrityError: If any uri violates constraints (from adapter)
             sqlite3.OperationalError: If database operation fails (from adapter)
         """
         if posts is None:
             raise ValueError("posts cannot be None")
         
-        # Validate all URIs before writing (fails on first invalid URI)
-        for post in posts:
-            if not post.uri or not post.uri.strip():
-                raise ValueError("uri cannot be empty")
-        
+        # Validation is handled by Pydantic models (BlueskyFeedPost.validate_uri)
+        # Pydantic will raise ValueError if any post has an empty uri
         self._db_adapter.write_feed_posts(posts)
         return posts
     
-    def get_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+    def get_feed_post(self, uri: str) -> BlueskyFeedPost:
         """Get a feed post from SQLite.
         
         Args:
             uri: Post URI to look up
             
         Returns:
-            BlueskyFeedPost model if found, None otherwise.
+            BlueskyFeedPost model if found.
             
         Raises:
-            ValueError: If uri is empty or None
+            ValueError: If uri is empty or if no feed post is found for the given URI
         """
         if not uri or not uri.strip():
             raise ValueError("uri cannot be empty")
+        # Note: uri validation here is for the function parameter, not the model
+        # The adapter may return a model, but we validate the input parameter here
         return self._db_adapter.read_feed_post(uri)
     
     def list_feed_posts_by_author(self, author_handle: str) -> list[BlueskyFeedPost]:

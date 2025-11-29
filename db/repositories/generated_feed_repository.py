@@ -46,6 +46,23 @@ class GeneratedFeedRepository(ABC):
             List of all GeneratedFeed models.
         """
         raise NotImplementedError
+    
+    @abstractmethod
+    def get_post_uris_for_run(self, agent_handle: str, run_id: str) -> set[str]:
+        """Get all post URIs from generated feeds for a specific agent and run.
+        
+        Args:
+            agent_handle: Agent handle to filter by
+            run_id: Run ID to filter by
+            
+        Returns:
+            Set of post URIs from all generated feeds matching the agent and run.
+            Returns empty set if no feeds found.
+            
+        Raises:
+            ValueError: If agent_handle or run_id is empty
+        """
+        raise NotImplementedError
 
 
 class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
@@ -73,17 +90,15 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
             The created or updated GeneratedFeed object
             
         Raises:
-            ValueError: If agent_handle, run_id, or turn_number is empty
+            ValueError: If agent_handle or run_id is empty (validated by Pydantic model)
             sqlite3.IntegrityError: If composite key violates constraints (from adapter)
             sqlite3.OperationalError: If database operation fails (from adapter)
+            
+        Note:
+            turn_number is validated by Pydantic at model creation time, so it cannot be None.
+            agent_handle and run_id are validated by Pydantic field validators.
         """
-        if not feed.agent_handle or not feed.agent_handle.strip():
-            raise ValueError("agent_handle cannot be empty")
-        if not feed.run_id or not feed.run_id.strip():
-            raise ValueError("run_id cannot be empty")
-        if feed.turn_number is None:
-            raise ValueError("turn_number cannot be None")
-        
+        # Validation is handled by Pydantic model (GeneratedFeed.validate_agent_handle, validate_run_id)
         self._db_adapter.write_generated_feed(feed)
         return feed
     
@@ -99,16 +114,18 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
             GeneratedFeed model for the specified agent, run, and turn.
             
         Raises:
-            ValueError: If agent_handle, run_id, or turn_number is empty/None
+            ValueError: If agent_handle or run_id is empty
             ValueError: If no feed is found for the given composite key (from adapter)
+            
+        Note:
+            turn_number is validated by the function signature (int type), so it cannot be None.
+            agent_handle and run_id are validated here as function parameters.
         """
         if not agent_handle or not agent_handle.strip():
             raise ValueError("agent_handle cannot be empty")
         if not run_id or not run_id.strip():
             raise ValueError("run_id cannot be empty")
-        if turn_number is None:
-            raise ValueError("turn_number cannot be None")
-        
+        # Note: These validations are for function parameters, not model fields
         return self._db_adapter.read_generated_feed(agent_handle, run_id, turn_number)
     
     def list_all_generated_feeds(self) -> list[GeneratedFeed]:
@@ -118,6 +135,27 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
             List of all GeneratedFeed models.
         """
         return self._db_adapter.read_all_generated_feeds()
+    
+    def get_post_uris_for_run(self, agent_handle: str, run_id: str) -> set[str]:
+        """Get all post URIs from generated feeds for a specific agent and run.
+        
+        Args:
+            agent_handle: Agent handle to filter by
+            run_id: Run ID to filter by
+            
+        Returns:
+            Set of post URIs from all generated feeds matching the agent and run.
+            Returns empty set if no feeds found.
+            
+        Raises:
+            ValueError: If agent_handle or run_id is empty
+        """
+        if not agent_handle or not agent_handle.strip():
+            raise ValueError("agent_handle cannot be empty")
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        
+        return self._db_adapter.read_post_uris_for_run(agent_handle, run_id)
 
 
 def create_sqlite_generated_feed_repository() -> SQLiteGeneratedFeedRepository:
