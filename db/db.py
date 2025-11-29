@@ -87,7 +87,8 @@ def initialize_database() -> None:
                 status TEXT NOT NULL CHECK(status IN ('running', 'completed', 'failed')),
                 completed_at TEXT NULL,
                 CHECK (
-                    (completed_at IS NULL) OR (status = 'completed' AND completed_at >= started_at)
+                    (status = 'completed' AND completed_at IS NOT NULL AND completed_at >= started_at) OR
+                    (status != 'completed' AND completed_at IS NULL)
                 )
             )
         """)
