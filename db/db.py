@@ -484,8 +484,65 @@ def load_feed_post_uris_from_current_run(
         return {uri for row in rows for uri in json.loads(row["post_uris"])}
 
 
+def _row_to_run(row: sqlite3.Row) -> Run:
+    """Convert a database row to a Run model.
+    
+    Args:
+        row: SQLite Row object containing run data
+        
+    Returns:
+        Run model instance
+        
+    Raises:
+        ValueError: If required fields are NULL or status is invalid
+        KeyError: If required columns are missing from row
+    """
+    from db.models import RunStatus
+    
+    # Validate required fields are not NULL
+    if row["run_id"] is None:
+        raise ValueError("run_id cannot be NULL")
+    if row["created_at"] is None:
+        raise ValueError("created_at cannot be NULL")
+    if row["total_turns"] is None:
+        raise ValueError("total_turns cannot be NULL")
+    if row["total_agents"] is None:
+        raise ValueError("total_agents cannot be NULL")
+    if row["started_at"] is None:
+        raise ValueError("started_at cannot be NULL")
+    if row["status"] is None:
+        raise ValueError("status cannot be NULL")
+    
+    # Convert status string to RunStatus enum, handling invalid values
+    try:
+        status = RunStatus(row["status"])
+    except ValueError:
+        raise ValueError(f"Invalid status value: {row['status']}. Must be one of: {[s.value for s in RunStatus]}")
+    
+    return Run(
+        run_id=row["run_id"],
+        created_at=row["created_at"],
+        total_turns=row["total_turns"],
+        total_agents=row["total_agents"],
+        started_at=row["started_at"],
+        status=status,
+        completed_at=row["completed_at"],
+    )
+
+
 def read_run(run_id: str) -> Optional[Run]:
-    """Read a run by run_id."""
+    """Read a run by run_id.
+    
+    Args:
+        run_id: Unique identifier for the run
+        
+    Returns:
+        Run model if found, None otherwise
+        
+    Raises:
+        ValueError: If the run data is invalid (NULL fields, invalid status)
+        sqlite3.OperationalError: If database operation fails
+    """
     with get_connection() as conn:
         row = conn.execute(
             "SELECT * FROM runs WHERE run_id = ?",
@@ -495,35 +552,24 @@ def read_run(run_id: str) -> Optional[Run]:
         if row is None:
             return None
             
-        return Run(
-            run_id=row["run_id"],
-            created_at=row["created_at"],
-            total_turns=row["total_turns"],
-            total_agents=row["total_agents"],
-            started_at=row["started_at"],
-            status=row["status"],
-            completed_at=row["completed_at"],
-        )
+        return _row_to_run(row)
 
 def read_all_runs() -> list[Run]:
-    """Read all runs, ordered by created_at descending."""
+    """Read all runs, ordered by created_at descending.
+    
+    Returns:
+        List of Run models, ordered by created_at descending
+        
+    Raises:
+        ValueError: If any run data is invalid (NULL fields, invalid status)
+        sqlite3.OperationalError: If database operation fails
+    """
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT * FROM runs ORDER BY created_at DESC"
         ).fetchall()
         
-        return [
-            Run(
-                run_id=row["run_id"],
-                created_at=row["created_at"],
-                total_turns=row["total_turns"],
-                total_agents=row["total_agents"],
-                started_at=row["started_at"],
-                status=row["status"],
-                completed_at=row["completed_at"],
-            )
-            for row in rows
-        ]
+        return [_row_to_run(row) for row in rows]
 
 def update_run_status(run_id: str, status: str, completed_at: Optional[str] = None) -> None:
     """Update a run's status."""
