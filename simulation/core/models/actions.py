@@ -5,7 +5,7 @@ from pydantic import BaseModel, ValidationInfo, field_validator
 
 def validate_non_empty_string(v: str, info: ValidationInfo) -> str:
     """Shared validator for non-empty string fields.
-    
+
     Checks None, coerces to str, strips whitespace, and raises ValueError
     if the result is empty. Uses info.field_name for error messages.
     """

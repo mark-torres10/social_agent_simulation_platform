@@ -20,11 +20,11 @@ class SocialMediaAgent:
 
     def get_feed(self, run_id: str, turn_number: int = 0) -> GeneratedFeed:
         """Get a feed for this agent.
-        
+
         Args:
             run_id: The ID of the simulation run (required for validation)
             turn_number: The turn number for this feed (default: 0)
-            
+
         Returns:
             A GeneratedFeed instance for this agent
         """

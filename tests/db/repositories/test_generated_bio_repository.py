@@ -25,7 +25,7 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                created_at="2024-01-01T00:00:00Z",
             ),
         )
 
@@ -47,7 +47,7 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-02-01T12:30:00Z",
+                created_at="2024-02-01T12:30:00Z",
             ),
         )
 
@@ -70,7 +70,7 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                created_at="2024-01-01T00:00:00Z",
             ),
         )
 
@@ -94,14 +94,14 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         # Model creation should fail with ValidationError due to empty handle
         with pytest.raises(ValidationError) as exc_info:
             GeneratedBio(
-            handle="",
-            generated_bio="Bio text",
+                handle="",
+                generated_bio="Bio text",
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                    created_at="2024-01-01T00:00:00Z",
                 ),
-        )
+            )
 
         # Verify the error message contains the expected validation error
         errors = exc_info.value.errors()
@@ -119,14 +119,14 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         # Model creation should fail with ValidationError due to empty generated_bio
         with pytest.raises(ValidationError) as exc_info:
             GeneratedBio(
-            handle="test.bsky.social",
-            generated_bio="",
+                handle="test.bsky.social",
+                generated_bio="",
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                    created_at="2024-01-01T00:00:00Z",
                 ),
-        )
+            )
 
         # Verify the error message contains the expected validation error
         errors = exc_info.value.errors()
@@ -155,7 +155,7 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                created_at="2024-01-01T00:00:00Z",
             ),
         )
 
@@ -181,7 +181,7 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                created_at="2024-01-01T00:00:00Z",
             ),
         )
 
@@ -207,7 +207,7 @@ class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-01-01T00:00:00Z",
+                created_at="2024-01-01T00:00:00Z",
             ),
         )
         mock_adapter.read_generated_bio.return_value = expected
@@ -263,7 +263,7 @@ class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
             metadata=GenerationMetadata(
                 model_used=None,
                 generation_metadata=None,
-            created_at="2024-03-15T14:30:00Z",
+                created_at="2024-03-15T14:30:00Z",
             ),
         )
         mock_adapter.read_generated_bio.return_value = expected
@@ -334,7 +334,7 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-                created_at="2024-01-01T00:00:00Z",
+                    created_at="2024-01-01T00:00:00Z",
                 ),
             ),
             GeneratedBio(
@@ -343,7 +343,7 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-                created_at="2024-01-02T00:00:00Z",
+                    created_at="2024-01-02T00:00:00Z",
                 ),
             ),
         ]
@@ -371,7 +371,7 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-                created_at="2024-01-01T00:00:00Z",
+                    created_at="2024-01-01T00:00:00Z",
                 ),
             ),
             GeneratedBio(
@@ -380,7 +380,7 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-                created_at="2024-01-02T00:00:00Z",
+                    created_at="2024-01-02T00:00:00Z",
                 ),
             ),
         ]
@@ -418,7 +418,7 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
                 metadata=GenerationMetadata(
                     model_used=None,
                     generation_metadata=None,
-                created_at=f"2024-01-{i + 1:02d}T00:00:00Z",
+                    created_at=f"2024-01-{i + 1:02d}T00:00:00Z",
                 ),
             )
             for i in range(100)
