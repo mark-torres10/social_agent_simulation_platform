@@ -1,5 +1,6 @@
-from ai.agents import SocialMediaAgent
-from db.models import BlueskyFeedPost, GeneratedFeed
+from simulation.core.models.agents import SocialMediaAgent
+from simulation.core.models.feeds import GeneratedFeed
+from simulation.core.models.posts import BlueskyFeedPost
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.generated_feed_repository import (
     create_sqlite_generated_feed_repository,

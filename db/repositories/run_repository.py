@@ -11,7 +11,8 @@ from db.exceptions import (
     RunNotFoundError,
     RunStatusUpdateError,
 )
-from db.models import Run, RunConfig, RunStatus
+from simulation.core.models.runs import Run, RunConfig, RunStatus
+from simulation.core.models.turns import TurnMetadata
 
 
 class RunRepository(ABC):
@@ -40,6 +41,24 @@ class RunRepository(ABC):
             RunNotFoundError: If the run with the given ID does not exist
             InvalidTransitionError: If the status transition is invalid
             RunStatusUpdateError: If the status update fails due to a database error
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_turn_metadata(
+        self, run_id: str, turn_number: int
+    ) -> Optional[TurnMetadata]:
+        """Get turn metadata for a specific run and turn.
+
+        Args:
+            run_id: The ID of the run
+            turn_number: The turn number (0-indexed)
+
+        Returns:
+            TurnMetadata if found, None otherwise
+
+        Raises:
+            ValueError: If run_id is empty or turn_number is negative
         """
         raise NotImplementedError
 
@@ -168,6 +187,34 @@ class SQLiteRunRepository(RunRepository):
             raise
         except Exception as e:
             raise RunStatusUpdateError(run_id, str(e)) from e
+
+    def get_turn_metadata(
+        self, run_id: str, turn_number: int
+    ) -> Optional[TurnMetadata]:
+        """Get turn metadata for a specific run and turn.
+
+        Args:
+            run_id: The ID of the run
+            turn_number: The turn number (0-indexed)
+
+        Returns:
+            TurnMetadata if found, None otherwise
+
+        Raises:
+            ValueError: If run_id is empty or turn_number is negative
+
+        Note:
+            This is a stub implementation. The actual database query
+            will be implemented when turn metadata storage is added.
+        """
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        if turn_number < 0:
+            raise ValueError("turn_number cannot be negative")
+
+        # TODO: Implement actual database query for turn metadata
+        # This will need to query turn results/metadata from the database
+        raise NotImplementedError("get_turn_metadata not yet implemented")
 
 
 def create_sqlite_repository() -> SQLiteRunRepository:

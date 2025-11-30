@@ -1,9 +1,18 @@
-from .engine import SimulationEngine
 from .exceptions import InsufficientAgentsError, SimulationError
-from .models import TurnResult
+from .models.turns import TurnResult
+
+
+# Lazy import to avoid circular dependency
+def __getattr__(name: str):
+    if name == "SimulationEngine":
+        from .engine import SimulationEngine
+
+        return SimulationEngine
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
 
 __all__ = [
-    "SimulationEngine",
+    "SimulationEngine",  # type: ignore[attr-defined]  # Lazy-loaded via __getattr__
     "TurnResult",
     "SimulationError",
     "InsufficientAgentsError",

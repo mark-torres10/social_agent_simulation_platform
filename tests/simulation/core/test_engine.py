@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from db.exceptions import RunNotFoundError
-from db.models import Run, RunStatus
+from simulation.core.models.runs import Run, RunStatus
 from db.repositories.feed_post_repository import FeedPostRepository
 from db.repositories.generated_bio_repository import GeneratedBioRepository
 from db.repositories.generated_feed_repository import GeneratedFeedRepository

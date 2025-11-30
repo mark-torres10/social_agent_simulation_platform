@@ -11,7 +11,7 @@ import pytest
 
 from db.db import DB_PATH, get_connection, initialize_database
 from db.exceptions import InvalidTransitionError, RunNotFoundError
-from db.models import Run, RunConfig, RunStatus
+from simulation.core.models.runs import Run, RunConfig, RunStatus
 from db.repositories.run_repository import create_sqlite_repository
 
 

@@ -25,7 +25,11 @@ import sqlite3
 from typing import Optional
 
 from db.exceptions import RunNotFoundError
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed, Run
+from simulation.core.models.feeds import GeneratedFeed
+from simulation.core.models.generated.bio import GeneratedBio
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.profiles import BlueskyProfile
+from simulation.core.models.runs import Run
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
@@ -245,7 +249,9 @@ def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
             raise
 
 
-def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
+def write_generated_bio_to_database(
+    handle: str, generated_bio: str, created_at: str | None = None
+) -> None:
     """Write a generated bio to the database.
 
     INTERNAL: This function is an implementation detail used by SQLiteGeneratedBioAdapter.
@@ -254,11 +260,14 @@ def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
     Args:
         handle: Handle of the profile
         generated_bio: Generated bio string
+        created_at: Optional timestamp. If None, uses current timestamp.
 
     Raises:
         sqlite3.IntegrityError: If handle violates constraints
         sqlite3.OperationalError: If database operation fails
     """
+    if created_at is None:
+        created_at = get_current_timestamp()
     with get_connection() as conn:
         conn.execute(
             """
@@ -266,7 +275,7 @@ def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
             (handle, generated_bio, created_at)
             VALUES (?, ?, ?)
         """,
-            (handle, generated_bio, get_current_timestamp()),
+            (handle, generated_bio, created_at),
         )
         conn.commit()
 
@@ -597,6 +606,7 @@ def read_feed_post(uri: str) -> BlueskyFeedPost:
         _validate_feed_post_row(row, context=context)
 
         return BlueskyFeedPost(
+            id=row["uri"],
             uri=row["uri"],
             author_display_name=row["author_display_name"],
             author_handle=row["author_handle"],
@@ -646,6 +656,7 @@ def read_feed_posts_by_author(author_handle: str) -> list[BlueskyFeedPost]:
 
             posts.append(
                 BlueskyFeedPost(
+                    id=row["uri"],
                     uri=row["uri"],
                     author_display_name=row["author_display_name"],
                     author_handle=row["author_handle"],
@@ -693,6 +704,7 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
 
             posts.append(
                 BlueskyFeedPost(
+                    id=row["uri"],
                     uri=row["uri"],
                     author_display_name=row["author_display_name"],
                     author_handle=row["author_handle"],
@@ -764,10 +776,16 @@ def read_generated_bio(handle: str) -> Optional[GeneratedBio]:
         context = f"generated bio handle={handle}"
         _validate_generated_bio_row(row, context=context)
 
+        from simulation.core.models.generated.base import GenerationMetadata
+
         return GeneratedBio(
             handle=row["handle"],
             generated_bio=row["generated_bio"],
-            created_at=row["created_at"],
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=row["created_at"],
+            ),
         )
 
 
@@ -795,11 +813,17 @@ def read_all_generated_bios() -> list[GeneratedBio]:
             context = f"generated bio handle={handle_value}"
             _validate_generated_bio_row(row, context=context)
 
+            from simulation.core.models.generated.base import GenerationMetadata
+
             bios.append(
                 GeneratedBio(
                     handle=row["handle"],
                     generated_bio=row["generated_bio"],
-                    created_at=row["created_at"],
+                    metadata=GenerationMetadata(
+                        model_used=None,
+                        generation_metadata=None,
+                        created_at=row["created_at"],
+                    ),
                 )
             )
 
@@ -905,7 +929,7 @@ def _row_to_run(row: sqlite3.Row) -> Run:
         ValueError: If required fields are NULL or status is invalid
         KeyError: If required columns are missing from row
     """
-    from db.models import RunStatus
+    from simulation.core.models.runs import RunStatus
 
     # Validate required fields are not NULL
     if row["run_id"] is None:

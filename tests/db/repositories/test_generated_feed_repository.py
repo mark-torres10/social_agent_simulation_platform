@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from db.adapters.base import GeneratedFeedDatabaseAdapter
-from db.models import GeneratedFeed
+from simulation.core.models.feeds import GeneratedFeed
 from db.repositories.generated_feed_repository import SQLiteGeneratedFeedRepository
 
 

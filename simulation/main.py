@@ -1,7 +1,7 @@
 import sys
 
-from ai.agents import SocialMediaAgent, record_agent_actions
 from ai.create_initial_agents import create_initial_agents
+from simulation.core.models.agents import SocialMediaAgent
 from db.db import initialize_database
 from db.exceptions import (
     InvalidTransitionError,
@@ -9,7 +9,8 @@ from db.exceptions import (
     RunNotFoundError,
     RunStatusUpdateError,
 )
-from db.models import BlueskyFeedPost, Run, RunConfig, RunStatus
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.runs import Run, RunConfig, RunStatus
 from db.repositories.run_repository import RunRepository
 from feeds.feed_generator import generate_feeds
 
@@ -36,13 +37,14 @@ def simulate_turn(
         comments = agent.comment_posts(feed=feed)
         follows = agent.follow_users(feed=feed)
 
-        record_agent_actions(
-            {
-                "likes": likes,
-                "comments": comments,
-                "follows": follows,
-            }
-        )
+        # TODO: record_agent_actions is not yet implemented
+        # record_agent_actions(
+        #     {
+        #         "likes": likes,
+        #         "comments": comments,
+        #         "follows": follows,
+        #     }
+        # )
 
         total_actions["likes"] += len(likes)
         total_actions["comments"] += len(comments)

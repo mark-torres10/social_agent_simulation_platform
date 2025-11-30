@@ -3,7 +3,7 @@
 from typing import Optional
 
 from db.adapters.base import ProfileDatabaseAdapter
-from db.models import BlueskyProfile
+from simulation.core.models.profiles import BlueskyProfile
 
 
 class SQLiteProfileAdapter(ProfileDatabaseAdapter):

@@ -2,8 +2,9 @@
 
 # TODO: for now, we'll generate the feeds in real-time during the simulations,
 # but in practice we would generate them offline.
-from ai.agents import SocialMediaAgent
-from db.models import BlueskyFeedPost, GeneratedFeed
+from simulation.core.models.agents import SocialMediaAgent
+from simulation.core.models.feeds import GeneratedFeed
+from simulation.core.models.posts import BlueskyFeedPost
 
 MAX_POSTS_PER_FEED = 20
 

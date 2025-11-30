@@ -9,7 +9,7 @@ from db.repositories.run_repository import RunRepository
 from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.runs import Run, RunConfig, RunStatus
 
-from .models import TurnResult
+from simulation.core.models.turns import TurnData, TurnMetadata, TurnResult
 
 
 class SimulationEngine:
@@ -61,7 +61,9 @@ class SimulationEngine:
         """
         return self.run_repo.list_runs()
 
-    def get_turn_metadata(self, run_id: str, turn_number: int) -> Optional[TurnMetadata]:
+    def get_turn_metadata(
+        self, run_id: str, turn_number: int
+    ) -> Optional[TurnMetadata]:
         """Get turn metadata for a specific run and turn number.
 
         Args:
@@ -92,7 +94,6 @@ class SimulationEngine:
             raise ValueError("run_id cannot be empty")
         if turn_number < 0:
             raise ValueError("turn_number cannot be negative")
-        
 
     ## Private Methods ##
 

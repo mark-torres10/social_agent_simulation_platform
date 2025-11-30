@@ -7,7 +7,8 @@ For now, what this looks like is:
 """
 
 from db.db import initialize_database
-from db.models import BlueskyFeedPost, BlueskyProfile
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.profiles import BlueskyProfile
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from lib.bluesky_client import BlueskyClient
@@ -60,6 +61,7 @@ def transform_bsky_author_feed(author_feed: list[dict]) -> list[BlueskyFeedPost]
 
     for post_view in author_feed:
         post = BlueskyFeedPost(
+            id=post_view["uri"],
             uri=post_view["uri"],
             author_display_name=post_view["author"]["display_name"],
             author_handle=post_view["author"]["handle"],

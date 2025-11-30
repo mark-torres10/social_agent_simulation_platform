@@ -12,7 +12,7 @@ from db.exceptions import (
     RunNotFoundError,
     RunStatusUpdateError,
 )
-from db.models import Run, RunConfig, RunStatus
+from simulation.core.models.runs import Run, RunConfig, RunStatus
 from db.repositories.run_repository import SQLiteRunRepository
 
 

@@ -3,9 +3,11 @@
 from unittest.mock import Mock
 
 import pytest
+from pydantic import ValidationError
 
 from db.adapters.base import GeneratedBioDatabaseAdapter
-from db.models import GeneratedBio
+from simulation.core.models.generated.base import GenerationMetadata
+from simulation.core.models.generated.bio import GeneratedBio
 from db.repositories.generated_bio_repository import SQLiteGeneratedBioRepository
 
 
@@ -20,7 +22,11 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         bio = GeneratedBio(
             handle="test.bsky.social",
             generated_bio="This is a test bio for the profile.",
-            created_at="2024-01-01T00:00:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-01-01T00:00:00Z",
+            ),
         )
 
         # Act
@@ -38,7 +44,11 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         bio = GeneratedBio(
             handle="another.bsky.social",
             generated_bio="This is a longer bio with more detailed information about the user and their interests.",
-            created_at="2024-02-01T12:30:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-02-01T12:30:00Z",
+            ),
         )
 
         # Act
@@ -57,7 +67,11 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         bio = GeneratedBio(
             handle="test.bsky.social",
             generated_bio="Test bio text",
-            created_at="2024-01-01T00:00:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-01-01T00:00:00Z",
+            ),
         )
 
         # Act
@@ -69,47 +83,59 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         assert isinstance(call_args, GeneratedBio)
         assert call_args.handle == result.handle
         assert call_args.generated_bio == result.generated_bio
-        assert call_args.created_at == result.created_at
+        assert call_args.metadata.created_at == result.metadata.created_at
 
     def test_creates_generated_bio_with_empty_handle(self):
-        """Test that creating GeneratedBio with empty handle is allowed (no Pydantic validator)."""
-        # Note: GeneratedBio model doesn't have handle validation, so empty string is technically allowed
-        # The repository doesn't validate handle either since validation would happen at model creation
+        """Test that creating GeneratedBio with empty handle raises ValidationError."""
         # Arrange
         mock_adapter = Mock(spec=GeneratedBioDatabaseAdapter)
         repo = SQLiteGeneratedBioRepository(mock_adapter)
-        bio = GeneratedBio(
-            handle="",
-            generated_bio="Bio text",
-            created_at="2024-01-01T00:00:00Z",
-        )
 
-        # Act
-        result = repo.create_or_update_generated_bio(bio)
+        # Act & Assert
+        # Model creation should fail with ValidationError due to empty handle
+        with pytest.raises(ValidationError) as exc_info:
+            GeneratedBio(
+                handle="",
+                generated_bio="Bio text",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at="2024-01-01T00:00:00Z",
+                ),
+            )
 
-        # Assert
-        # Model creation succeeds without validation error
-        assert result.handle == ""
-        mock_adapter.write_generated_bio.assert_called_once_with(bio)
+        # Verify the error message contains the expected validation error
+        errors = exc_info.value.errors()
+        assert len(errors) > 0
+        assert any(error["loc"] == ("handle",) for error in errors)
+        # Repository should not be called since model creation fails
+        mock_adapter.write_generated_bio.assert_not_called()
 
     def test_creates_generated_bio_with_empty_generated_bio(self):
-        """Test that creating GeneratedBio with empty generated_bio is allowed (no Pydantic validator)."""
+        """Test that creating GeneratedBio with empty generated_bio raises ValidationError."""
         # Arrange
         mock_adapter = Mock(spec=GeneratedBioDatabaseAdapter)
         repo = SQLiteGeneratedBioRepository(mock_adapter)
-        bio = GeneratedBio(
-            handle="test.bsky.social",
-            generated_bio="",
-            created_at="2024-01-01T00:00:00Z",
-        )
 
-        # Act
-        result = repo.create_or_update_generated_bio(bio)
+        # Act & Assert
+        # Model creation should fail with ValidationError due to empty generated_bio
+        with pytest.raises(ValidationError) as exc_info:
+            GeneratedBio(
+                handle="test.bsky.social",
+                generated_bio="",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at="2024-01-01T00:00:00Z",
+                ),
+            )
 
-        # Assert
-        # Model creation succeeds without validation error
-        assert result.generated_bio == ""
-        mock_adapter.write_generated_bio.assert_called_once_with(bio)
+        # Verify the error message contains the expected validation error
+        errors = exc_info.value.errors()
+        assert len(errors) > 0
+        assert any(error["loc"] == ("generated_bio",) for error in errors)
+        # Repository should not be called since model creation fails
+        mock_adapter.write_generated_bio.assert_not_called()
 
     @pytest.mark.parametrize(
         "error_message,check_identity",
@@ -128,7 +154,11 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         bio = GeneratedBio(
             handle="test.bsky.social",
             generated_bio="Test bio",
-            created_at="2024-01-01T00:00:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-01-01T00:00:00Z",
+            ),
         )
 
         # Act & Assert
@@ -150,7 +180,11 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         bio = GeneratedBio(
             handle="test.bsky.social",
             generated_bio="Test bio",
-            created_at="2024-01-01T00:00:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-01-01T00:00:00Z",
+            ),
         )
 
         # Act & Assert
@@ -172,7 +206,11 @@ class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
         expected = GeneratedBio(
             handle=handle,
             generated_bio="This is a test bio.",
-            created_at="2024-01-01T00:00:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-01-01T00:00:00Z",
+            ),
         )
         mock_adapter.read_generated_bio.return_value = expected
 
@@ -183,7 +221,7 @@ class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
         assert result is not None
         assert result.handle == expected.handle
         assert result.generated_bio == expected.generated_bio
-        assert result.created_at == expected.created_at
+        assert result.metadata.created_at == expected.metadata.created_at
         mock_adapter.read_generated_bio.assert_called_once_with(handle)
 
     def test_returns_none_when_generated_bio_not_found(self):
@@ -224,7 +262,11 @@ class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
         expected = GeneratedBio(
             handle=handle,
             generated_bio="This is a longer bio with multiple sentences and detailed information about the user's interests and background.",
-            created_at="2024-03-15T14:30:00Z",
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at="2024-03-15T14:30:00Z",
+            ),
         )
         mock_adapter.read_generated_bio.return_value = expected
 
@@ -235,7 +277,7 @@ class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
         assert result is not None
         assert result.handle == handle
         assert len(result.generated_bio) > 50
-        assert result.created_at == "2024-03-15T14:30:00Z"
+        assert result.metadata.created_at == "2024-03-15T14:30:00Z"
 
     def test_raises_value_error_when_handle_is_empty(self):
         """Test that get_generated_bio raises ValueError when handle is empty."""
@@ -291,12 +333,20 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
             GeneratedBio(
                 handle="user1.bsky.social",
                 generated_bio="Bio 1",
-                created_at="2024-01-01T00:00:00Z",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at="2024-01-01T00:00:00Z",
+                ),
             ),
             GeneratedBio(
                 handle="user2.bsky.social",
                 generated_bio="Bio 2",
-                created_at="2024-01-02T00:00:00Z",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at="2024-01-02T00:00:00Z",
+                ),
             ),
         ]
         mock_adapter.read_all_generated_bios.return_value = expected
@@ -320,12 +370,20 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
             GeneratedBio(
                 handle="first.bsky.social",
                 generated_bio="First bio",
-                created_at="2024-01-01T00:00:00Z",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at="2024-01-01T00:00:00Z",
+                ),
             ),
             GeneratedBio(
                 handle="second.bsky.social",
                 generated_bio="Second bio",
-                created_at="2024-01-02T00:00:00Z",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at="2024-01-02T00:00:00Z",
+                ),
             ),
         ]
         mock_adapter.read_all_generated_bios.return_value = expected
@@ -359,7 +417,11 @@ class TestSQLiteGeneratedBioRepositoryListAllGeneratedBios:
             GeneratedBio(
                 handle=f"user{i}.bsky.social",
                 generated_bio=f"Bio {i}",
-                created_at=f"2024-01-{i + 1:02d}T00:00:00Z",
+                metadata=GenerationMetadata(
+                    model_used=None,
+                    generation_metadata=None,
+                    created_at=f"2024-01-{i + 1:02d}T00:00:00Z",
+                ),
             )
             for i in range(100)
         ]

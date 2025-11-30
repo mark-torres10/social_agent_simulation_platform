@@ -2,6 +2,7 @@ from enum import Enum
 
 from pydantic import BaseModel, field_validator
 
+
 class RunConfig(BaseModel):
     """Configuration for a simulation run."""
 

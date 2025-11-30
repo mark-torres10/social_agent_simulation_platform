@@ -1,6 +1,10 @@
-from simulation.core.models.actions import Like, Comment, Follow, TurnAction
-from simulation.core.models.posts import Post
+from simulation.core.models.actions import TurnAction
 from simulation.core.models.feeds import GeneratedFeed
+from simulation.core.models.generated.comment import GeneratedComment
+from simulation.core.models.generated.follow import GeneratedFollow
+from simulation.core.models.generated.like import GeneratedLike
+from simulation.core.models.posts import BlueskyFeedPost
+
 
 class SocialMediaAgent:
     def __init__(self, handle: str):
@@ -10,10 +14,10 @@ class SocialMediaAgent:
         self.followers: int = 0
         self.following: int = 0
         self.posts_count: int = 0
-        self.posts: list[Post] = []
-        self.likes: list[Like] = []
-        self.comments: list[Comment] = []
-        self.follows: list[Follow] = []
+        self.posts: list[BlueskyFeedPost] = []
+        self.likes: list[GeneratedLike] = []
+        self.comments: list[GeneratedComment] = []
+        self.follows: list[GeneratedFollow] = []
 
     def get_feed(self) -> GeneratedFeed:
         from lib.utils import get_current_timestamp
@@ -27,11 +31,11 @@ class SocialMediaAgent:
             created_at=get_current_timestamp(),
         )
 
-    def like_posts(self, feed: list[Post]) -> list[Like]:
+    def like_posts(self, feed: list[BlueskyFeedPost]) -> list[GeneratedLike]:
         return []
 
-    def comment_posts(self, feed: list[Post]) -> list[Comment]:
+    def comment_posts(self, feed: list[BlueskyFeedPost]) -> list[GeneratedComment]:
         return []
 
-    def follow_users(self, feed: list[Post]) -> list[Follow]:
+    def follow_users(self, feed: list[BlueskyFeedPost]) -> list[GeneratedFollow]:
         return []

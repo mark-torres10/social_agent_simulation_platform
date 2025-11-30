@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 from db.adapters.base import GeneratedFeedDatabaseAdapter
-from db.models import GeneratedFeed
+from simulation.core.models.feeds import GeneratedFeed
 
 
 class GeneratedFeedRepository(ABC):

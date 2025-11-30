@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator
 
 from simulation.core.models.actions import Like
 from simulation.core.models.generated.base import GenerationMetadata
-from pydantic import BaseModel
+
 
 class GeneratedLike(BaseModel):
     like: Like
