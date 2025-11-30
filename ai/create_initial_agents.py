@@ -1,10 +1,10 @@
 """Given the database of Bluesky profiles and feed posts, create a list of agents."""
 
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from db.repositories.generated_bio_repository import create_sqlite_generated_bio_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from ai.agents import SocialMediaAgent
-from db.db import read_all_generated_bios
 
 
 def create_initial_agents() -> list[SocialMediaAgent]:
@@ -12,23 +12,17 @@ def create_initial_agents() -> list[SocialMediaAgent]:
     posts and pass into the network."""
     profile_repo = create_sqlite_profile_repository()
     feed_post_repo = create_sqlite_feed_post_repository()
+    generated_bio_repo = create_sqlite_generated_bio_repository()
     profiles: list[BlueskyProfile] = profile_repo.list_profiles()
     feed_posts: list[BlueskyFeedPost] = feed_post_repo.list_all_feed_posts()
-    generated_bios: list[GeneratedBio] = read_all_generated_bios()
+    generated_bios: list[GeneratedBio] = generated_bio_repo.list_all_generated_bios()
 
     handle_to_feed_posts: dict[str, list[BlueskyFeedPost]] = {}
     for post in feed_posts:
         handle_to_feed_posts.setdefault(post.author_handle, []).append(post)
 
-    handle_to_generated_bio: dict[str, GeneratedBio] = {}
-    for bio in generated_bios:
-        handle_to_generated_bio.setdefault(bio.handle, []).append(bio)
-
     handle_to_generated_bio: dict[str, GeneratedBio] = {
-        profile.handle: [
-            bio for bio in generated_bios if bio.handle == profile.handle
-        ][0]
-        for profile in profiles
+        bio.handle: bio for bio in generated_bios
     }
     agents: list[SocialMediaAgent] = []
 
@@ -38,11 +32,14 @@ def create_initial_agents() -> list[SocialMediaAgent]:
         agent.followers: int = profile.followers_count
         agent.following: int = profile.follows_count
         agent.posts_count: int = profile.posts_count
-        agent.posts = handle_to_feed_posts[profile.handle]
+        agent.posts = handle_to_feed_posts.get(profile.handle, [])
         agent.likes = []
         agent.comments = []
         agent.follows = []
-        agent.generated_bio = handle_to_generated_bio[profile.handle].generated_bio
+        if profile.handle in handle_to_generated_bio:
+            agent.generated_bio = handle_to_generated_bio[profile.handle].generated_bio
+        else:
+            agent.generated_bio = ""
         agents.append(agent)
     return agents
 
