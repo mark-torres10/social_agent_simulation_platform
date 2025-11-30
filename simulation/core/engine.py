@@ -12,7 +12,14 @@ from .models import TurnResult
 
 
 class SimulationEngine:
-    def __init__(self, run_repo: RunRepository, profile_repo: ProfileRepository, feed_post_repo: FeedPostRepository, generated_bio_repo: GeneratedBioRepository, generated_feed_repo: GeneratedFeedRepository):
+    def __init__(
+        self, 
+        run_repo: RunRepository,
+        profile_repo: ProfileRepository,
+        feed_post_repo: FeedPostRepository,
+        generated_bio_repo: GeneratedBioRepository,
+        generated_feed_repo: GeneratedFeedRepository,
+    ):
         self.run_repo = run_repo
         self.profile_repo = profile_repo
         self.feed_post_repo = feed_post_repo
