@@ -5,6 +5,7 @@ For now, what this looks like is:
 - Using that information to create a bio for the agent.
 - Persisting the agent to the SQLite database.
 """
+
 from db.db import initialize_database
 from db.models import BlueskyFeedPost, BlueskyProfile
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
@@ -20,20 +21,18 @@ BLUESKY_PROFILE_URLS = [
     "https://bsky.app/profile/did:plc:ksjfbda7262bbqmuoly54lww",
     "https://bsky.app/profile/did:plc:2q2hs5o42jhbd23pp6lkiauh",
     "https://bsky.app/profile/did:plc:j37zetcnytvnfjlk4ca3d2yv",
-    "https://bsky.app/profile/did:plc:zbrhmanjs62oyqywjwdazxz3"
+    "https://bsky.app/profile/did:plc:zbrhmanjs62oyqywjwdazxz3",
 ]
 
-BLUESKY_PROFILES = [
-    url.split("/")[-1] for url in BLUESKY_PROFILE_URLS
-]
+BLUESKY_PROFILES = [url.split("/")[-1] for url in BLUESKY_PROFILE_URLS]
 
 
 def transform_bsky_profile(profile: dict) -> BlueskyProfile:
     """Transform raw Bluesky profile data into BlueskyProfile model.
-    
+
     Args:
         profile: Profile view dictionary from Bluesky API
-        
+
     Returns:
         BlueskyProfile model
     """
@@ -50,15 +49,15 @@ def transform_bsky_profile(profile: dict) -> BlueskyProfile:
 
 def transform_bsky_author_feed(author_feed: list[dict]) -> list[BlueskyFeedPost]:
     """Transform raw Bluesky author feed data into BlueskyFeedPost models.
-    
+
     Args:
         author_feed: List of post view dictionaries from Bluesky API
-        
+
     Returns:
         List of BlueskyFeedPost models
     """
     transformed_posts = []
-    
+
     for post_view in author_feed:
         post = BlueskyFeedPost(
             uri=post_view["uri"],
@@ -73,7 +72,7 @@ def transform_bsky_author_feed(author_feed: list[dict]) -> list[BlueskyFeedPost]
             created_at=post_view["record"]["created_at"],
         )
         transformed_posts.append(post)
-    
+
     return transformed_posts
 
 
@@ -84,6 +83,7 @@ def get_bsky_profile_information(handle: str) -> dict:
         "profile": profile,
         "author_feed": author_feed,
     }
+
 
 def main():
     initialize_database()
@@ -99,6 +99,7 @@ def main():
         feed_post_repo.create_or_update_feed_posts(feed_posts)
 
         print(f"Profile information for {handle} written to database.")
+
 
 if __name__ == "__main__":
     print("Initializing agents...")

@@ -31,9 +31,9 @@ def create_initial_agents() -> list[SocialMediaAgent]:
     for profile in profiles:
         agent = SocialMediaAgent(profile.handle)
         agent.bio = profile.bio
-        agent.followers: int = profile.followers_count
-        agent.following: int = profile.follows_count
-        agent.posts_count: int = profile.posts_count
+        agent.followers = profile.followers_count
+        agent.following = profile.follows_count
+        agent.posts_count = profile.posts_count
         agent.posts = handle_to_feed_posts.get(profile.handle, [])
         agent.likes = []
         agent.comments = []

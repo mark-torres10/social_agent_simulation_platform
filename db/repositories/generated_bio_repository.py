@@ -9,35 +9,35 @@ from db.models import GeneratedBio
 
 class GeneratedBioRepository(ABC):
     """Abstract base class defining the interface for generated bio repositories."""
-    
+
     @abstractmethod
     def create_or_update_generated_bio(self, bio: GeneratedBio) -> GeneratedBio:
         """Create or update a generated bio.
-        
+
         Args:
             bio: GeneratedBio model to create or update
-            
+
         Returns:
             The created or updated GeneratedBio object
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def get_generated_bio(self, handle: str) -> Optional[GeneratedBio]:
         """Get a generated bio by handle.
-        
+
         Args:
             handle: Profile handle to look up
-            
+
         Returns:
             GeneratedBio model if found, None otherwise.
         """
         raise NotImplementedError
-    
+
     @abstractmethod
     def list_all_generated_bios(self) -> list[GeneratedBio]:
         """List all generated bios.
-        
+
         Returns:
             List of all GeneratedBio models.
         """
@@ -46,28 +46,28 @@ class GeneratedBioRepository(ABC):
 
 class SQLiteGeneratedBioRepository(GeneratedBioRepository):
     """SQLite implementation of GeneratedBioRepository.
-    
+
     Uses dependency injection to accept a database adapter,
     decoupling it from concrete implementations.
     """
-    
+
     def __init__(self, db_adapter: GeneratedBioDatabaseAdapter):
         """Initialize repository with injected dependencies.
-        
+
         Args:
             db_adapter: Database adapter for generated bio operations
         """
         self._db_adapter = db_adapter
-    
+
     def create_or_update_generated_bio(self, bio: GeneratedBio) -> GeneratedBio:
         """Create or update a generated bio in SQLite.
-        
+
         Args:
             bio: GeneratedBio model to create or update
-            
+
         Returns:
             The created or updated GeneratedBio object
-            
+
         Raises:
             ValueError: If bio.handle is empty (validated by Pydantic model if added)
             sqlite3.IntegrityError: If handle violates constraints (from adapter)
@@ -76,19 +76,19 @@ class SQLiteGeneratedBioRepository(GeneratedBioRepository):
         # Validation will be handled by Pydantic model if validators are added
         self._db_adapter.write_generated_bio(bio)
         return bio
-    
+
     def get_generated_bio(self, handle: str) -> Optional[GeneratedBio]:
         """Get a generated bio from SQLite.
-        
+
         Args:
             handle: Profile handle to look up
-            
+
         Returns:
             GeneratedBio model if found, None otherwise.
-            
+
         Raises:
             ValueError: If handle is empty or None
-            
+
         Note:
             Pydantic validators only run when creating models. Since this method accepts a raw string
             parameter (not a GeneratedBio model), we validate handle here.
@@ -96,10 +96,10 @@ class SQLiteGeneratedBioRepository(GeneratedBioRepository):
         if not handle or not handle.strip():
             raise ValueError("handle cannot be empty")
         return self._db_adapter.read_generated_bio(handle)
-    
+
     def list_all_generated_bios(self) -> list[GeneratedBio]:
         """List all generated bios from SQLite.
-        
+
         Returns:
             List of all GeneratedBio models.
         """
@@ -108,12 +108,10 @@ class SQLiteGeneratedBioRepository(GeneratedBioRepository):
 
 def create_sqlite_generated_bio_repository() -> SQLiteGeneratedBioRepository:
     """Factory function to create a SQLiteGeneratedBioRepository with default dependencies.
-    
+
     Returns:
         SQLiteGeneratedBioRepository configured with SQLite adapter
     """
     from db.adapters.sqlite import SQLiteGeneratedBioAdapter
-    return SQLiteGeneratedBioRepository(
-        db_adapter=SQLiteGeneratedBioAdapter()
-    )
 
+    return SQLiteGeneratedBioRepository(db_adapter=SQLiteGeneratedBioAdapter())

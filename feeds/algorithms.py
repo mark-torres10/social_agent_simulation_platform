@@ -7,10 +7,11 @@ from db.models import BlueskyFeedPost, GeneratedFeed
 
 MAX_POSTS_PER_FEED = 20
 
+
 def generate_chronological_feed(
     candidate_posts: list[BlueskyFeedPost],
     agent: SocialMediaAgent,
-    limit: int = MAX_POSTS_PER_FEED
+    limit: int = MAX_POSTS_PER_FEED,
 ) -> dict:
     """Generate a chronological feed for an agent."""
     # TODO: fast follow: insert randomness so that the feed isn't always the
@@ -21,10 +22,10 @@ def generate_chronological_feed(
     return {
         "feed_id": feed_id,
         "agent_handle": agent.handle,
-        "post_uris": [p.uri for p in sorted_posts]
+        "post_uris": [p.uri for p in sorted_posts],
     }
 
 
 # TODO: placeholder for next ticket.
 def generate_rag_feed() -> GeneratedFeed:
-    pass
+    raise NotImplementedError("RAG feed generation not yet implemented")

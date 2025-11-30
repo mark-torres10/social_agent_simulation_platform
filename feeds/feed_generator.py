@@ -14,13 +14,12 @@ def generate_feed(
     candidate_posts: list[BlueskyFeedPost],
     run_id: str,
     turn_number: int,
-    feed_type: str
+    feed_type: str,
 ) -> GeneratedFeed:
     """Generate a feed for an agent."""
     if feed_type == "chronological":
         feed_dict = generate_chronological_feed(
-            candidate_posts=candidate_posts,
-            agent=agent
+            candidate_posts=candidate_posts, agent=agent
         )
         feed = GeneratedFeed(
             feed_id=feed_dict["feed_id"],
@@ -39,10 +38,10 @@ def generate_feeds(
     agents: list[SocialMediaAgent],
     run_id: str,
     turn_number: int,
-    feed_type: str = "chronological"
+    feed_type: str = "chronological",
 ) -> dict[str, list[BlueskyFeedPost]]:
     """Generate feeds for all the agents.
-    
+
     Returns a dictionary of agent handles to lists of hydrated BlueskyFeedPost models.
 
     Does the following:
@@ -57,15 +56,14 @@ def generate_feeds(
         # TODO: right now we load all posts per agent, but obviously
         # can optimize and personalize later to save on queries.
         candidate_posts: list[BlueskyFeedPost] = load_candidate_posts(
-            agent=agent,
-            run_id=run_id
+            agent=agent, run_id=run_id
         )
         feed: GeneratedFeed = generate_feed(
             agent=agent,
             candidate_posts=candidate_posts,
             run_id=run_id,
             turn_number=turn_number,
-            feed_type=feed_type
+            feed_type=feed_type,
         )
         generated_feed_repo.create_or_update_generated_feed(feed)
         feeds[agent.handle] = feed

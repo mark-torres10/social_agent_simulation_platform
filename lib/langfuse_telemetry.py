@@ -12,7 +12,7 @@ def get_langfuse_client() -> Optional[Langfuse]:
     secret_key = os.getenv("LANGFUSE_SECRET_KEY")
     if not public_key or not secret_key:
         return None
-    
+
     base_url = os.getenv("LANGFUSE_BASE_URL", "https://cloud.langfuse.com")
     return Langfuse(
         public_key=public_key,
@@ -31,7 +31,7 @@ def log_llm_request(
     """Log LLM request to Langfuse."""
     if not client:
         return
-    
+
     try:
         with client.start_as_current_observation(
             as_type="span",
@@ -47,5 +47,5 @@ def log_llm_request(
                 generation.update(
                     output={"bio": output, "output_length": len(output)},
                 )
-    except Exception as e: 
+    except Exception as e:
         raise Exception(f"Failed to log LLM request to Langfuse: {e}")

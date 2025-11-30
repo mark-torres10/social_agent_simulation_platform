@@ -38,7 +38,6 @@ __all__ = [
     "SQLiteProfileRepository",
     "create_sqlite_profile_repository",
     "RunRepository",
-    "SQLiteRunRepository", 
+    "SQLiteRunRepository",
     "create_sqlite_repository",
 ]
-
