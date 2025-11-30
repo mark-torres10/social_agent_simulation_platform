@@ -7,9 +7,11 @@ from pydantic import BaseModel, field_validator
 
 class TurnAction(str, Enum):
     """Action types for a simulation turn."""
+
     LIKE = "like"
     COMMENT = "comment"
     FOLLOW = "follow"
+
 
 class TurnResult(BaseModel):
     """Result of executing a single simulation turn.
@@ -35,4 +37,3 @@ class TurnResult(BaseModel):
         return v
 
     model_config = {"frozen": True}  # Make immutable
-

@@ -13,7 +13,7 @@ from .models import TurnResult
 
 class SimulationEngine:
     def __init__(
-        self, 
+        self,
         run_repo: RunRepository,
         profile_repo: ProfileRepository,
         feed_post_repo: FeedPostRepository,
@@ -72,7 +72,9 @@ class SimulationEngine:
 
     ## Private Methods ##
 
-    def _simulate_turn(self, run_id: str, turn_number: int, agents: list[SocialMediaAgent]) -> TurnResult:
+    def _simulate_turn(
+        self, run_id: str, turn_number: int, agents: list[SocialMediaAgent]
+    ) -> TurnResult:
         """Simulate a single turn of the simulation.
 
         Args:

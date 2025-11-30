@@ -1,5 +1,6 @@
 """Domain-specific exceptions for the simulation engine."""
 
+
 class SimulationError(Exception):
     """
     Base exception class for simulation-related errors.
@@ -10,7 +11,9 @@ class SimulationError(Exception):
         raise SimulationError("Something went wrong", run_id="abc123", turn_number=5)
     """
 
-    def __init__(self, message: str, run_id: str | None = None, turn_number: int | None = None):
+    def __init__(
+        self, message: str, run_id: str | None = None, turn_number: int | None = None
+    ):
         """
         Initialize SimulationError.
 
@@ -33,11 +36,11 @@ class InsufficientAgentsError(SimulationError):
     """
 
     def __init__(
-        self, 
-        requested: int, 
-        available: int, 
-        run_id: str | None = None, 
-        turn_number: int | None = None
+        self,
+        requested: int,
+        available: int,
+        run_id: str | None = None,
+        turn_number: int | None = None,
     ):
         """
         Initialize InsufficientAgentsError.
