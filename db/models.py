@@ -160,3 +160,9 @@ class Run(BaseModel):
     started_at: str
     status: RunStatus
     completed_at: str | None = None
+
+
+class TurnResult(BaseModel):
+    turn_number: int
+    total_actions: dict[str, int]
+    execution_time_ms: int | None = None
