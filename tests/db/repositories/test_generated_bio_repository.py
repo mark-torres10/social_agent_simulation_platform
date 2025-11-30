@@ -109,11 +109,16 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         assert result.generated_bio == ""
         mock_adapter.write_generated_bio.assert_called_once_with(bio)
     
-    def test_propagates_adapter_exception_when_write_fails(self):
+    @pytest.mark.parametrize("error_message,check_identity", [
+        ("Database error", False),
+        ("DB error", True),
+    ])
+    def test_propagates_adapter_exception(self, error_message, check_identity):
         """Test that create_or_update_generated_bio propagates adapter exceptions when database write fails."""
         # Arrange
         mock_adapter = Mock(spec=GeneratedBioDatabaseAdapter)
-        mock_adapter.write_generated_bio.side_effect = Exception("Database error")
+        db_error = Exception(error_message)
+        mock_adapter.write_generated_bio.side_effect = db_error
         repo = SQLiteGeneratedBioRepository(mock_adapter)
         bio = GeneratedBio(
             handle="test.bsky.social",
@@ -122,31 +127,13 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         )
         
         # Act & Assert
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(Exception, match=error_message) as exc_info:
             repo.create_or_update_generated_bio(bio)
         
-        assert "Database error" in str(exc_info.value)
-        assert exc_info.value is mock_adapter.write_generated_bio.side_effect
-    
-    def test_propagates_adapter_exception_directly(self):
-        """Test that create_or_update_generated_bio propagates adapter exceptions directly."""
-        # Arrange
-        mock_adapter = Mock(spec=GeneratedBioDatabaseAdapter)
-        db_error = Exception("DB error")
-        mock_adapter.write_generated_bio.side_effect = db_error
-        repo = SQLiteGeneratedBioRepository(mock_adapter)
-        bio = GeneratedBio(
-            handle="specific.bsky.social",
-            generated_bio="Test bio",
-            created_at="2024-01-01T00:00:00Z",
-        )
-        
-        # Act & Assert
-        with pytest.raises(Exception) as exc_info:
-            repo.create_or_update_generated_bio(bio)
-        
-        assert exc_info.value is db_error
-        assert "DB error" in str(exc_info.value)
+        if check_identity:
+            assert exc_info.value is db_error
+        else:
+            assert exc_info.value is mock_adapter.write_generated_bio.side_effect
     
     def test_propagates_original_exception_directly(self):
         """Test that create_or_update_generated_bio propagates the original exception directly."""
@@ -162,11 +149,10 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         )
         
         # Act & Assert
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ValueError, match="Invalid data") as exc_info:
             repo.create_or_update_generated_bio(bio)
         
         assert exc_info.value is original_error
-        assert "Invalid data" in str(exc_info.value)
 
 
 class TestSQLiteGeneratedBioRepositoryGetGeneratedBio:
