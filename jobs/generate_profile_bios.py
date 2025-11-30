@@ -8,7 +8,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from db.db import initialize_database
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.generated_bio_repository import (
     create_sqlite_generated_bio_repository,
@@ -16,6 +15,9 @@ from db.repositories.generated_bio_repository import (
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from lib.langfuse_telemetry import get_langfuse_client, log_llm_request
 from lib.utils import get_current_timestamp
+from simulation.core.models.generated.bio import GeneratedBio
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.profiles import BlueskyProfile
 
 GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages(
     [
@@ -154,10 +156,16 @@ def main():
         print(f"Generating bio for profile {i} of {len(profiles)}...")
         posts = posts_by_author[profile.handle]
         generated_bio_text: str = generate_bio_for_profile(profile, posts)
+        from simulation.core.models.generated.base import GenerationMetadata
+
         generated_bio = GeneratedBio(
             handle=profile.handle,
             generated_bio=generated_bio_text,
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used="gpt-4o-mini",
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
         generated_bio_repo.create_or_update_generated_bio(generated_bio)
         print(f"Generated bio for {profile.handle}: {generated_bio_text}")

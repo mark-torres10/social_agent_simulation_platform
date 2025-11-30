@@ -3,7 +3,7 @@
 from typing import Optional
 
 from db.adapters.base import RunDatabaseAdapter
-from db.models import Run
+from simulation.core.models.runs import Run
 
 
 class SQLiteRunAdapter(RunDatabaseAdapter):

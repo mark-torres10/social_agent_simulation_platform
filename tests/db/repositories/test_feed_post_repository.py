@@ -7,8 +7,8 @@ import pytest
 from pydantic import ValidationError
 
 from db.adapters.base import FeedPostDatabaseAdapter
-from db.models import BlueskyFeedPost
 from db.repositories.feed_post_repository import SQLiteFeedPostRepository
+from simulation.core.models.posts import BlueskyFeedPost
 
 
 class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
@@ -20,6 +20,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         repo = SQLiteFeedPostRepository(mock_adapter)
         post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Test User",
             author_handle="test.bsky.social",
@@ -45,6 +46,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         repo = SQLiteFeedPostRepository(mock_adapter)
         post = BlueskyFeedPost(
+            id="at://did:plc:another456/app.bsky.feed.post/another",
             uri="at://did:plc:another456/app.bsky.feed.post/another",
             author_display_name="Another User",
             author_handle="another.bsky.social",
@@ -72,6 +74,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         repo = SQLiteFeedPostRepository(mock_adapter)
         post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Test User",
             author_handle="test.bsky.social",
@@ -101,6 +104,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
             BlueskyFeedPost(
+                id="",
                 uri="",
                 author_display_name="Test User",
                 author_handle="test.bsky.social",
@@ -121,6 +125,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
             BlueskyFeedPost(
+                id="   ",
                 uri="   ",
                 author_display_name="Test User",
                 author_handle="test.bsky.social",
@@ -145,6 +150,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         mock_adapter.write_feed_post.side_effect = db_error
         repo = SQLiteFeedPostRepository(mock_adapter)
         post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Test User",
             author_handle="test.bsky.social",
@@ -175,6 +181,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
         repo = SQLiteFeedPostRepository(mock_adapter)
         posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name=f"User {i}",
                 author_handle=f"user{i}.bsky.social",
@@ -229,6 +236,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
         # The second post will fail validation when created
         with pytest.raises(ValidationError) as exc_info:
             BlueskyFeedPost(
+                id="at://did:plc:test1/app.bsky.feed.post/test1",
                 uri="at://did:plc:test1/app.bsky.feed.post/test1",
                 author_display_name="User 1",
                 author_handle="user1.bsky.social",
@@ -241,6 +249,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
                 created_at="2024-01-01T00:00:00Z",
             )
             BlueskyFeedPost(
+                id="",  # Empty URI
                 uri="",  # Empty URI
                 author_display_name="User 2",
                 author_handle="user2.bsky.social",
@@ -264,6 +273,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
         repo = SQLiteFeedPostRepository(mock_adapter)
         posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name=f"User {i}",
                 author_handle=f"user{i}.bsky.social",
@@ -294,6 +304,7 @@ class TestSQLiteFeedPostRepositoryGetFeedPost:
         # Arrange
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         expected_post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Test User",
             author_handle="test.bsky.social",
@@ -368,6 +379,7 @@ class TestSQLiteFeedPostRepositoryListFeedPostsByAuthor:
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         expected_posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name="Test User",
                 author_handle="test.bsky.social",
@@ -457,6 +469,7 @@ class TestSQLiteFeedPostRepositoryListAllFeedPosts:
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         expected_posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name=f"User {i}",
                 author_handle=f"user{i}.bsky.social",
@@ -487,6 +500,7 @@ class TestSQLiteFeedPostRepositoryListAllFeedPosts:
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
         expected_posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name=f"User {i}",
                 author_handle=f"user{i}.bsky.social",

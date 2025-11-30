@@ -1,7 +1,7 @@
 """SQLite implementation of feed post database adapter."""
 
 from db.adapters.base import FeedPostDatabaseAdapter
-from db.models import BlueskyFeedPost
+from simulation.core.models.posts import BlueskyFeedPost
 
 
 class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):

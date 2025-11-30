@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from db.adapters.base import GeneratedBioDatabaseAdapter
-from db.models import GeneratedBio
+from simulation.core.models.generated.bio import GeneratedBio
 
 
 class GeneratedBioRepository(ABC):

@@ -3,7 +3,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed, Run
+from simulation.core.models.feeds import GeneratedFeed
+from simulation.core.models.generated.bio import GeneratedBio
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.profiles import BlueskyProfile
+from simulation.core.models.runs import Run
 
 
 class RunDatabaseAdapter(ABC):

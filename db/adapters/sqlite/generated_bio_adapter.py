@@ -3,7 +3,7 @@
 from typing import Optional
 
 from db.adapters.base import GeneratedBioDatabaseAdapter
-from db.models import GeneratedBio
+from simulation.core.models.generated.bio import GeneratedBio
 
 
 class SQLiteGeneratedBioAdapter(GeneratedBioDatabaseAdapter):
@@ -27,7 +27,9 @@ class SQLiteGeneratedBioAdapter(GeneratedBioDatabaseAdapter):
         """
         from db.db import write_generated_bio_to_database
 
-        write_generated_bio_to_database(bio.handle, bio.generated_bio)
+        write_generated_bio_to_database(
+            bio.handle, bio.generated_bio, bio.metadata.created_at
+        )
 
     def read_generated_bio(self, handle: str) -> Optional[GeneratedBio]:
         """Read a generated bio from SQLite.

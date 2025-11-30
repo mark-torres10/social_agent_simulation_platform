@@ -10,8 +10,8 @@ import pytest
 from pydantic import ValidationError
 
 from db.db import DB_PATH, initialize_database
-from db.models import BlueskyProfile
 from db.repositories.profile_repository import create_sqlite_profile_repository
+from simulation.core.models.profiles import BlueskyProfile
 
 
 @pytest.fixture

@@ -9,11 +9,12 @@ import tempfile
 import pytest
 
 from db.db import DB_PATH, initialize_database
-from db.models import GeneratedBio
 from db.repositories.generated_bio_repository import (
     create_sqlite_generated_bio_repository,
 )
 from lib.utils import get_current_timestamp
+from simulation.core.models.generated.base import GenerationMetadata
+from simulation.core.models.generated.bio import GeneratedBio
 
 
 @pytest.fixture
@@ -51,7 +52,11 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         bio = GeneratedBio(
             handle="test.bsky.social",
             generated_bio="This is a test bio for the profile.",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
 
         # Create bio
@@ -64,7 +69,7 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         assert retrieved_bio is not None
         assert retrieved_bio.handle == created_bio.handle
         assert retrieved_bio.generated_bio == created_bio.generated_bio
-        assert retrieved_bio.created_at == created_bio.created_at
+        assert retrieved_bio.metadata.created_at == created_bio.metadata.created_at
 
     def test_get_generated_bio_retrieves_from_database(self, temp_db):
         """Test that get_generated_bio retrieves a bio from the database."""
@@ -72,7 +77,11 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         bio = GeneratedBio(
             handle="retrieve.bsky.social",
             generated_bio="This bio should be retrievable.",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
 
         # Create the bio first
@@ -92,17 +101,29 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         bio1 = GeneratedBio(
             handle="user1.bsky.social",
             generated_bio="Bio 1",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
         bio2 = GeneratedBio(
             handle="user2.bsky.social",
             generated_bio="Bio 2",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
         bio3 = GeneratedBio(
             handle="user3.bsky.social",
             generated_bio="Bio 3",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
 
         repo.create_or_update_generated_bio(bio1)
@@ -135,7 +156,11 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         initial_bio = GeneratedBio(
             handle="update.bsky.social",
             generated_bio="Initial bio text",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
         repo.create_or_update_generated_bio(initial_bio)
 
@@ -143,7 +168,11 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         updated_bio = GeneratedBio(
             handle="update.bsky.social",
             generated_bio="Updated bio text with more information",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
         repo.create_or_update_generated_bio(updated_bio)
 
@@ -169,7 +198,11 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         bio = GeneratedBio(
             handle="longbio.bsky.social",
             generated_bio=long_bio_text,
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
 
         repo.create_or_update_generated_bio(bio)
@@ -186,12 +219,20 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         bio1 = GeneratedBio(
             handle="alice.bsky.social",
             generated_bio="Alice's bio",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
         bio2 = GeneratedBio(
             handle="bob.bsky.social",
             generated_bio="Bob's bio",
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
 
         repo.create_or_update_generated_bio(bio1)
@@ -231,7 +272,11 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         bio = GeneratedBio(
             handle="special.bsky.social",
             generated_bio=bio_text,
-            created_at=get_current_timestamp(),
+            metadata=GenerationMetadata(
+                model_used=None,
+                generation_metadata=None,
+                created_at=get_current_timestamp(),
+            ),
         )
 
         repo.create_or_update_generated_bio(bio)

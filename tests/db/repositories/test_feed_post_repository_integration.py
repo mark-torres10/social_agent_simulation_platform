@@ -9,8 +9,8 @@ import tempfile
 import pytest
 
 from db.db import DB_PATH, initialize_database
-from db.models import BlueskyFeedPost
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from simulation.core.models.posts import BlueskyFeedPost
 
 
 @pytest.fixture
@@ -46,6 +46,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
         """Test creating a feed post and reading it back from the database."""
         repo = create_sqlite_feed_post_repository()
         post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Test User",
             author_handle="test.bsky.social",
@@ -85,6 +86,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
         repo = create_sqlite_feed_post_repository()
         posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name=f"User {i}",
                 author_handle=f"user{i}.bsky.social",
@@ -117,6 +119,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
 
         # Create initial post
         initial_post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Initial Name",
             author_handle="test.bsky.social",
@@ -132,6 +135,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
 
         # Update the post
         updated_post = BlueskyFeedPost(
+            id="at://did:plc:test123/app.bsky.feed.post/test",
             uri="at://did:plc:test123/app.bsky.feed.post/test",
             author_display_name="Updated Name",
             author_handle="test.bsky.social",
@@ -169,6 +173,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
 
         # Create posts by different authors
         post1 = BlueskyFeedPost(
+            id="at://did:plc:alice/app.bsky.feed.post/post1",
             uri="at://did:plc:alice/app.bsky.feed.post/post1",
             author_display_name="Alice",
             author_handle="alice.bsky.social",
@@ -181,6 +186,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
             created_at="2024-01-01T00:00:00Z",
         )
         post2 = BlueskyFeedPost(
+            id="at://did:plc:alice/app.bsky.feed.post/post2",
             uri="at://did:plc:alice/app.bsky.feed.post/post2",
             author_display_name="Alice",
             author_handle="alice.bsky.social",
@@ -193,6 +199,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
             created_at="2024-01-02T00:00:00Z",
         )
         post3 = BlueskyFeedPost(
+            id="at://did:plc:bob/app.bsky.feed.post/post1",
             uri="at://did:plc:bob/app.bsky.feed.post/post1",
             author_display_name="Bob",
             author_handle="bob.bsky.social",
@@ -230,6 +237,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
         # Create multiple posts
         posts = [
             BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
                 author_display_name=f"User {i}",
                 author_handle=f"user{i}.bsky.social",
@@ -291,6 +299,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
 
         with pytest.raises(ValidationError) as exc_info:
             BlueskyFeedPost(
+                id="",
                 uri="",
                 author_display_name="Test User",
                 author_handle="test.bsky.social",
@@ -325,6 +334,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
 
         long_text = "This is a very long post. " * 100  # 2500+ characters
         post = BlueskyFeedPost(
+            id="at://did:plc:longpost/app.bsky.feed.post/test",
             uri="at://did:plc:longpost/app.bsky.feed.post/test",
             author_display_name="Long Post User",
             author_handle="longpost.bsky.social",
