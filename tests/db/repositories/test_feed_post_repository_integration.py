@@ -277,12 +277,10 @@ class TestSQLiteFeedPostRepositoryIntegration:
     
     def test_create_or_update_feed_post_with_empty_uri_raises_error(self, temp_db):
         """Test that creating BlueskyFeedPost with empty uri raises ValidationError from Pydantic."""
-        repo = create_sqlite_feed_post_repository()
-        
         # Pydantic validation happens at model creation time, not in repository
         from pydantic import ValidationError
         with pytest.raises(ValidationError) as exc_info:
-            post = BlueskyFeedPost(
+            BlueskyFeedPost(
                 uri="",
                 author_display_name="Test User",
                 author_handle="test.bsky.social",

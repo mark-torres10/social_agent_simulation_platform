@@ -1,7 +1,5 @@
 """SQLite implementation of feed post database adapter."""
 
-from typing import Optional
-
 from db.adapters.base import FeedPostDatabaseAdapter
 from db.models import BlueskyFeedPost
 

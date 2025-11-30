@@ -88,7 +88,7 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         # Arrange & Act & Assert
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
-            profile = BlueskyProfile(
+            BlueskyProfile(
                 handle="",
                 did="did:plc:test123",
                 display_name="Test User",
@@ -105,7 +105,7 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         # Arrange & Act & Assert
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
-            profile = BlueskyProfile(
+            BlueskyProfile(
                 handle="   ",
                 did="did:plc:test123",
                 display_name="Test User",

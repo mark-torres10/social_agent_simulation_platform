@@ -177,11 +177,9 @@ class TestSQLiteProfileRepositoryIntegration:
     
     def test_create_or_update_profile_with_empty_handle_raises_error(self, temp_db):
         """Test that creating BlueskyProfile with empty handle raises ValidationError from Pydantic."""
-        repo = create_sqlite_profile_repository()
-        
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
-            profile = BlueskyProfile(
+            BlueskyProfile(
                 handle="",
                 did="did:plc:test123",
                 display_name="Test User",

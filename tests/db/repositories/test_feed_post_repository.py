@@ -224,7 +224,7 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
         # Pydantic validation happens at model creation time, not in repository
         # The second post will fail validation when created
         with pytest.raises(ValidationError) as exc_info:
-            posts = [
+            [
                 BlueskyFeedPost(
                     uri="at://did:plc:test1/app.bsky.feed.post/test1",
                     author_display_name="User 1",

@@ -86,7 +86,7 @@ class TestSQLiteGeneratedFeedRepositoryCreateOrUpdateGeneratedFeed:
         # Arrange & Act & Assert
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
-            feed = GeneratedFeed(
+            GeneratedFeed(
                 feed_id="feed_test123",
                 run_id="run_123",
                 turn_number=1,
@@ -102,7 +102,7 @@ class TestSQLiteGeneratedFeedRepositoryCreateOrUpdateGeneratedFeed:
         # Arrange & Act & Assert
         # Pydantic validation happens at model creation time, not in repository
         with pytest.raises(ValidationError) as exc_info:
-            feed = GeneratedFeed(
+            GeneratedFeed(
                 feed_id="feed_test123",
                 run_id="",
                 turn_number=1,
