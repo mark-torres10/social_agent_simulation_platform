@@ -7,8 +7,8 @@ import pytest
 from pydantic import ValidationError
 
 from db.adapters.base import FeedPostDatabaseAdapter
-from simulation.core.models.posts import BlueskyFeedPost
 from db.repositories.feed_post_repository import SQLiteFeedPostRepository
+from simulation.core.models.posts import BlueskyFeedPost
 
 
 class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:

@@ -25,12 +25,12 @@ import sqlite3
 from typing import Optional
 
 from db.exceptions import RunNotFoundError
+from lib.utils import get_current_timestamp
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.generated.bio import GeneratedBio
 from simulation.core.models.posts import BlueskyFeedPost
 from simulation.core.models.profiles import BlueskyProfile
 from simulation.core.models.runs import Run
-from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
 

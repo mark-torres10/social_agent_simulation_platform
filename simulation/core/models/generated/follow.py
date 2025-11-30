@@ -1,4 +1,5 @@
 from pydantic import BaseModel, field_validator
+
 from simulation.core.models.actions import Follow
 from simulation.core.models.generated.base import GenerationMetadata
 

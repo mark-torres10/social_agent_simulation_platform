@@ -1,4 +1,3 @@
-from simulation.core.models.actions import TurnAction
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.generated.comment import GeneratedComment
 from simulation.core.models.generated.follow import GeneratedFollow

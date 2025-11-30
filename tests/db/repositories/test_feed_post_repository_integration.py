@@ -9,8 +9,8 @@ import tempfile
 import pytest
 
 from db.db import DB_PATH, initialize_database
-from simulation.core.models.posts import BlueskyFeedPost
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from simulation.core.models.posts import BlueskyFeedPost
 
 
 @pytest.fixture

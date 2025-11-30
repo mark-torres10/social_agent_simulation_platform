@@ -9,12 +9,12 @@ import tempfile
 import pytest
 
 from db.db import DB_PATH, initialize_database
-from simulation.core.models.generated.base import GenerationMetadata
-from simulation.core.models.generated.bio import GeneratedBio
 from db.repositories.generated_bio_repository import (
     create_sqlite_generated_bio_repository,
 )
 from lib.utils import get_current_timestamp
+from simulation.core.models.generated.base import GenerationMetadata
+from simulation.core.models.generated.bio import GeneratedBio
 
 
 @pytest.fixture

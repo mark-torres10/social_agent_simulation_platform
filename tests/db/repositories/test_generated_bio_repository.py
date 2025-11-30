@@ -6,9 +6,9 @@ import pytest
 from pydantic import ValidationError
 
 from db.adapters.base import GeneratedBioDatabaseAdapter
+from db.repositories.generated_bio_repository import SQLiteGeneratedBioRepository
 from simulation.core.models.generated.base import GenerationMetadata
 from simulation.core.models.generated.bio import GeneratedBio
-from db.repositories.generated_bio_repository import SQLiteGeneratedBioRepository
 
 
 class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
@@ -89,7 +89,6 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         """Test that creating GeneratedBio with empty handle raises ValidationError."""
         # Arrange
         mock_adapter = Mock(spec=GeneratedBioDatabaseAdapter)
-        repo = SQLiteGeneratedBioRepository(mock_adapter)
 
         # Act & Assert
         # Model creation should fail with ValidationError due to empty handle
@@ -115,7 +114,6 @@ class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:
         """Test that creating GeneratedBio with empty generated_bio raises ValidationError."""
         # Arrange
         mock_adapter = Mock(spec=GeneratedBioDatabaseAdapter)
-        repo = SQLiteGeneratedBioRepository(mock_adapter)
 
         # Act & Assert
         # Model creation should fail with ValidationError due to empty generated_bio

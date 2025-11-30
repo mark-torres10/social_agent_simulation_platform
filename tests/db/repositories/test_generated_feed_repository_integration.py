@@ -10,10 +10,10 @@ import pytest
 from pydantic import ValidationError
 
 from db.db import DB_PATH, initialize_database
-from simulation.core.models.feeds import GeneratedFeed
 from db.repositories.generated_feed_repository import (
     create_sqlite_generated_feed_repository,
 )
+from simulation.core.models.feeds import GeneratedFeed
 
 
 @pytest.fixture

@@ -12,8 +12,8 @@ from db.exceptions import (
     RunNotFoundError,
     RunStatusUpdateError,
 )
-from simulation.core.models.runs import Run, RunConfig, RunStatus
 from db.repositories.run_repository import SQLiteRunRepository
+from simulation.core.models.runs import Run, RunConfig, RunStatus
 
 
 class TestSQLiteRunRepositoryCreateRun:

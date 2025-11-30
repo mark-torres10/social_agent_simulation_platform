@@ -7,8 +7,8 @@ from db.repositories.generated_bio_repository import (
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.generated.bio import GeneratedBio
-from simulation.core.models.profiles import BlueskyProfile
 from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.profiles import BlueskyProfile
 
 
 def create_initial_agents() -> list[SocialMediaAgent]:

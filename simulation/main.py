@@ -1,7 +1,6 @@
 import sys
 
 from ai.create_initial_agents import create_initial_agents
-from simulation.core.models.agents import SocialMediaAgent
 from db.db import initialize_database
 from db.exceptions import (
     InvalidTransitionError,
@@ -9,10 +8,11 @@ from db.exceptions import (
     RunNotFoundError,
     RunStatusUpdateError,
 )
-from simulation.core.models.posts import BlueskyFeedPost
-from simulation.core.models.runs import Run, RunConfig, RunStatus
 from db.repositories.run_repository import RunRepository
 from feeds.feed_generator import generate_feeds
+from simulation.core.models.agents import SocialMediaAgent
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.runs import Run, RunConfig, RunStatus
 
 
 def simulate_turn(

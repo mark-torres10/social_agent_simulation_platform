@@ -7,11 +7,11 @@ For now, what this looks like is:
 """
 
 from db.db import initialize_database
-from simulation.core.models.posts import BlueskyFeedPost
-from simulation.core.models.profiles import BlueskyProfile
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from lib.bluesky_client import BlueskyClient
+from simulation.core.models.posts import BlueskyFeedPost
+from simulation.core.models.profiles import BlueskyProfile
 
 bsky_client = BlueskyClient()
 

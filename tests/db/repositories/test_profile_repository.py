@@ -6,8 +6,8 @@ import pytest
 from pydantic import ValidationError
 
 from db.adapters.base import ProfileDatabaseAdapter
-from simulation.core.models.profiles import BlueskyProfile
 from db.repositories.profile_repository import SQLiteProfileRepository
+from simulation.core.models.profiles import BlueskyProfile
 
 
 class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
