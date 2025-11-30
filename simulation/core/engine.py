@@ -1,12 +1,15 @@
 from typing import Optional
 
 from ai.agents import SocialMediaAgent
-from db.models import Run, RunConfig, RunStatus, TurnResult
-from db.repositories.run_repository import RunRepository
-from db.repositories.profile_repository import ProfileRepository
+from db.models import Run, RunConfig, RunStatus
 from db.repositories.feed_post_repository import FeedPostRepository
 from db.repositories.generated_bio_repository import GeneratedBioRepository
 from db.repositories.generated_feed_repository import GeneratedFeedRepository
+from db.repositories.profile_repository import ProfileRepository
+from db.repositories.run_repository import RunRepository
+
+from .models import TurnResult
+
 
 class SimulationEngine:
     def __init__(self, run_repo: RunRepository, profile_repo: ProfileRepository, feed_post_repo: FeedPostRepository, generated_bio_repo: GeneratedBioRepository, generated_feed_repo: GeneratedFeedRepository):
@@ -19,24 +22,78 @@ class SimulationEngine:
     ## Public API ##
 
     def execute_run(self, run_config: RunConfig) -> Run:
-        pass
+        """Execute a simulation run.
+
+        Args:
+            run_config: The configuration for the run.
+
+        Returns:
+            The run that was executed.
+        """
+        raise NotImplementedError  # Stub for PR 1
 
     def get_run(self, run_id: str) -> Optional[Run]:
-        pass
+        """Get a run by its ID.
+
+        Args:
+            run_id: The ID of the run to get.
+
+        Returns:
+            The run if found, None otherwise.
+        """
+        raise NotImplementedError  # Stub for PR 1
 
     def list_runs(self) -> list[Run]:
-        pass
+        """List all runs.
 
-    def get_turn_data(self, run_id :str, turn_number: int) -> Optional[TurnResult]:
-        pass
+        Returns:
+            A list of all runs.
+        """
+        raise NotImplementedError  # Stub for PR 1
+
+    def get_turn_data(self, run_id: str, turn_number: int) -> Optional[TurnResult]:
+        """Get turn data for a specific run and turn number.
+
+        Args:
+            run_id: The ID of the run.
+            turn_number: The turn number (0-indexed).
+
+        Returns:
+            The turn result if found, None otherwise.
+        """
+        raise NotImplementedError  # Stub for PR 1
 
     ## Private Methods ##
 
-    def _simulate_turn(self, run_id: str, turn_number: int) -> TurnResult:
-        pass
+    def _simulate_turn(self, run_id: str, turn_number: int, agents: list[SocialMediaAgent]) -> TurnResult:
+        """Simulate a single turn of the simulation.
 
-    def _create_agents_for_run(self, run_config: RunConfig) -> list[SocialMediaAgent]:
-        pass
+        Args:
+            run_id: The ID of the run.
+            turn_number: The turn number (0-indexed).
+            agents: The list of agents participating in the turn.
+
+        Returns:
+            The result of the turn execution.
+        """
+        raise NotImplementedError  # Stub for PR 1
+
+    def _create_agents_for_run(self, config: RunConfig) -> list[SocialMediaAgent]:
+        """Create agents for a simulation run.
+
+        Args:
+            config: The run configuration.
+
+        Returns:
+            A list of agents for the run.
+        """
+        raise NotImplementedError  # Stub for PR 1
 
     def _update_run_status_safely(self, run_id: str, status: RunStatus) -> None:
-        pass
+        """Update run status without masking original exceptions.
+
+        Args:
+            run_id: The ID of the run.
+            status: The new status.
+        """
+        raise NotImplementedError  # Stub for PR 1
