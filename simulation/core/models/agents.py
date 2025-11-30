@@ -1,5 +1,4 @@
-
-from simulation.core.models.actions import Like, Comment, Follow
+from simulation.core.models.actions import Like, Comment, Follow, TurnAction
 from simulation.core.models.posts import Post
 from simulation.core.models.feeds import GeneratedFeed
 
@@ -36,11 +35,3 @@ class SocialMediaAgent:
 
     def follow_users(self, feed: list[Post]) -> list[Follow]:
         return []
-
-
-class GeneratedBio(BaseModel):
-    """An AI-generated bio for a Bluesky profile."""
-
-    handle: str
-    generated_bio: str
-    created_at: str

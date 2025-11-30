@@ -1,12 +1,13 @@
 from typing import Optional
 
-from ai.agents import SocialMediaAgent
-from db.models import Run, RunConfig, RunStatus
 from db.repositories.feed_post_repository import FeedPostRepository
 from db.repositories.generated_bio_repository import GeneratedBioRepository
 from db.repositories.generated_feed_repository import GeneratedFeedRepository
 from db.repositories.profile_repository import ProfileRepository
 from db.repositories.run_repository import RunRepository
+
+from simulation.core.models.agents import SocialMediaAgent
+from simulation.core.models.runs import Run, RunConfig, RunStatus
 
 from .models import TurnResult
 
@@ -60,17 +61,38 @@ class SimulationEngine:
         """
         return self.run_repo.list_runs()
 
-    def get_turn_data(self, run_id: str, turn_number: int) -> Optional[TurnResult]:
-        """Get turn data for a specific run and turn number.
+    def get_turn_metadata(self, run_id: str, turn_number: int) -> Optional[TurnMetadata]:
+        """Get turn metadata for a specific run and turn number.
 
         Args:
             run_id: The ID of the run.
             turn_number: The turn number (0-indexed).
 
         Returns:
-            The turn result if found, None otherwise.
+            The turn metadata if found, None otherwise.
         """
-        raise NotImplementedError  # Stub for PR 1
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        if turn_number < 0:
+            raise ValueError("turn_number cannot be negative")
+        return self.run_repo.get_turn_metadata(run_id, turn_number)
+
+    def get_turn_data(self, run_id: str, turn_number: int) -> Optional[TurnData]:
+        """Returns full turn data with feeds and posts
+
+        Args:
+            run_id: The ID of the run.
+            turn_number: The turn number (0-indexed).
+
+        Returns:
+            Complete turn data including all feeds and hydrated posts.
+            Used in the UI for detailed views or full turn history.
+        """
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        if turn_number < 0:
+            raise ValueError("turn_number cannot be negative")
+        
 
     ## Private Methods ##
 
