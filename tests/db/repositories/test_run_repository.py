@@ -1,17 +1,19 @@
 """Tests for db.repositories.run_repository module."""
 
-import pytest
 import uuid
 from unittest.mock import Mock, patch
-from db.repositories.run_repository import SQLiteRunRepository
+
+import pytest
+
 from db.adapters.base import RunDatabaseAdapter
-from db.models import RunConfig, Run, RunStatus
 from db.exceptions import (
-    RunNotFoundError,
     InvalidTransitionError,
     RunCreationError,
+    RunNotFoundError,
     RunStatusUpdateError,
 )
+from db.models import Run, RunConfig, RunStatus
+from db.repositories.run_repository import SQLiteRunRepository
 
 
 class TestSQLiteRunRepositoryCreateRun:

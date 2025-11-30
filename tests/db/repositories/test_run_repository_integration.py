@@ -3,15 +3,16 @@
 These tests use a real SQLite database to test end-to-end functionality.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
 import time
 
+import pytest
+
+from db.db import DB_PATH, get_connection, initialize_database
+from db.exceptions import InvalidTransitionError, RunNotFoundError
+from db.models import Run, RunConfig, RunStatus
 from db.repositories.run_repository import create_sqlite_repository
-from db.models import RunConfig, Run, RunStatus
-from db.exceptions import RunNotFoundError, InvalidTransitionError
-from db.db import initialize_database, get_connection, DB_PATH
 
 
 @pytest.fixture
@@ -150,8 +151,9 @@ class TestRunStatusEnumSerialization:
     
     def test_invalid_status_string_raises_error(self, temp_db):
         """Test that reading invalid status string raises ValueError."""
-        from db.db import _row_to_run
         from unittest.mock import MagicMock
+
+        from db.db import _row_to_run
         
         # We can't insert invalid status due to CHECK constraint, so we test _row_to_run directly
         # This simulates what would happen if the database had invalid data (e.g., from manual edits)

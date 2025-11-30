@@ -1,6 +1,7 @@
 import os
-from dotenv import load_dotenv
+
 from atproto import Client
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -13,7 +14,7 @@ class BlueskyClient:
         if not self.handle or not self.password:
              # Fallback for debugging
              print(f"Env vars - HANDLE: {self.handle}, PASS: {'*' * len(self.password) if self.password else 'None'}")
-             raise ValueError(f"BLUESKY_HANDLE and BLUESKY_PASSWORD must be set in .env. Checked path: {env_path}")
+             raise ValueError("BLUESKY_HANDLE and BLUESKY_PASSWORD must be set in .env.")
         
         self.client.login(self.handle, self.password)
 

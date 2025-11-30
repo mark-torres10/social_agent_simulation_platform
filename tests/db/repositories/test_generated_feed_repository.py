@@ -1,11 +1,13 @@
 """Tests for db.repositories.generated_feed_repository module."""
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from pydantic import ValidationError
-from db.repositories.generated_feed_repository import SQLiteGeneratedFeedRepository
+
 from db.adapters.base import GeneratedFeedDatabaseAdapter
 from db.models import GeneratedFeed
+from db.repositories.generated_feed_repository import SQLiteGeneratedFeedRepository
 
 
 class TestSQLiteGeneratedFeedRepositoryCreateOrUpdateGeneratedFeed:

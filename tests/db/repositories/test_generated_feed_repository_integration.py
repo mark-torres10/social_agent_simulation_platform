@@ -3,14 +3,17 @@
 These tests use a real SQLite database to test end-to-end functionality.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
+
+import pytest
 from pydantic import ValidationError
 
-from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
+from db.db import DB_PATH, initialize_database
 from db.models import GeneratedFeed
-from db.db import initialize_database, DB_PATH
+from db.repositories.generated_feed_repository import (
+    create_sqlite_generated_feed_repository,
+)
 
 
 @pytest.fixture

@@ -1,11 +1,13 @@
 """Tests for db.repositories.profile_repository module."""
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 from pydantic import ValidationError
-from db.repositories.profile_repository import SQLiteProfileRepository
+
 from db.adapters.base import ProfileDatabaseAdapter
 from db.models import BlueskyProfile
+from db.repositories.profile_repository import SQLiteProfileRepository
 
 
 class TestSQLiteProfileRepositoryCreateOrUpdateProfile:

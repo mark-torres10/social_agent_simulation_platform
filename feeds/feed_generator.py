@@ -1,10 +1,13 @@
 from ai.agents import SocialMediaAgent
-from db.models import GeneratedFeed, BlueskyFeedPost
+from db.models import BlueskyFeedPost, GeneratedFeed
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
-from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
+from db.repositories.generated_feed_repository import (
+    create_sqlite_generated_feed_repository,
+)
 from feeds.algorithms import generate_chronological_feed
 from feeds.candidate_generation import load_candidate_posts
 from lib.utils import get_current_timestamp
+
 
 def generate_feed(
     agent: SocialMediaAgent,

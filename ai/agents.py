@@ -1,4 +1,5 @@
-from db.models import BlueskyFeedPost, Like, Comment, Follow, GeneratedFeed
+from db.models import BlueskyFeedPost, Comment, Follow, GeneratedFeed, Like
+
 
 class SocialMediaAgent:
     def __init__(self, handle: str):

@@ -1,17 +1,18 @@
 """Abstraction for repositories."""
 
-from abc import ABC, abstractmethod
-from typing import Optional, Callable
 import uuid
+from abc import ABC, abstractmethod
+from typing import Callable, Optional
 
-from db.models import RunConfig, Run, RunStatus
 from db.adapters.base import RunDatabaseAdapter
 from db.exceptions import (
-    RunNotFoundError,
     InvalidTransitionError,
     RunCreationError,
+    RunNotFoundError,
     RunStatusUpdateError,
 )
+from db.models import Run, RunConfig, RunStatus
+
 
 class RunRepository(ABC):
     """Abstract base class defining the interface for run repositories."""

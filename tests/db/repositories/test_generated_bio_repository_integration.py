@@ -3,13 +3,16 @@
 These tests use a real SQLite database to test end-to-end functionality.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
 
-from db.repositories.generated_bio_repository import create_sqlite_generated_bio_repository
+import pytest
+
+from db.db import DB_PATH, initialize_database
 from db.models import GeneratedBio
-from db.db import initialize_database, DB_PATH
+from db.repositories.generated_bio_repository import (
+    create_sqlite_generated_bio_repository,
+)
 from lib.utils import get_current_timestamp
 
 

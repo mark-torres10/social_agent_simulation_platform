@@ -1,10 +1,12 @@
 """Tests for db.repositories.generated_bio_repository module."""
 
-import pytest
 from unittest.mock import Mock
-from db.repositories.generated_bio_repository import SQLiteGeneratedBioRepository
+
+import pytest
+
 from db.adapters.base import GeneratedBioDatabaseAdapter
 from db.models import GeneratedBio
+from db.repositories.generated_bio_repository import SQLiteGeneratedBioRepository
 
 
 class TestSQLiteGeneratedBioRepositoryCreateOrUpdateGeneratedBio:

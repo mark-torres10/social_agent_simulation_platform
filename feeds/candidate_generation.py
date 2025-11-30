@@ -3,7 +3,9 @@
 from ai.agents import SocialMediaAgent
 from db.models import BlueskyFeedPost
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
-from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
+from db.repositories.generated_feed_repository import (
+    create_sqlite_generated_feed_repository,
+)
 
 
 # TODO: we can get arbitrarily complex with how we do this later

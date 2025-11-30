@@ -6,9 +6,9 @@ For now, what this looks like is:
 - Persisting the agent to the SQLite database.
 """
 from db.db import initialize_database
+from db.models import BlueskyFeedPost, BlueskyProfile
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
-from db.models import BlueskyFeedPost, BlueskyProfile
 from lib.bluesky_client import BlueskyClient
 
 bsky_client = BlueskyClient()

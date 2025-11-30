@@ -1,12 +1,14 @@
 """Tests for db.repositories.feed_post_repository module."""
 
-import pytest
 import sqlite3
 from unittest.mock import Mock
+
+import pytest
 from pydantic import ValidationError
-from db.repositories.feed_post_repository import SQLiteFeedPostRepository
+
 from db.adapters.base import FeedPostDatabaseAdapter
 from db.models import BlueskyFeedPost
+from db.repositories.feed_post_repository import SQLiteFeedPostRepository
 
 
 class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:

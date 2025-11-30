@@ -2,15 +2,18 @@
 to use for the agent, and save to the database."""
 
 import os
+
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
 
 from db.db import initialize_database
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
-from db.repositories.generated_bio_repository import create_sqlite_generated_bio_repository
+from db.repositories.generated_bio_repository import (
+    create_sqlite_generated_bio_repository,
+)
 from db.repositories.profile_repository import create_sqlite_profile_repository
-from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from lib.langfuse_telemetry import get_langfuse_client, log_llm_request
 from lib.utils import get_current_timestamp
 

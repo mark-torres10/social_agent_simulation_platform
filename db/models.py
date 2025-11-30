@@ -1,6 +1,8 @@
-from enum import Enum
 import uuid
+from enum import Enum
+
 from pydantic import BaseModel, field_validator
+
 
 class Like(BaseModel):
     like_id: str
