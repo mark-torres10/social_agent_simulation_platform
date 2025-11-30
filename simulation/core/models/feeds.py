@@ -29,6 +29,24 @@ class GeneratedFeed(BaseModel):
             raise ValueError("run_id cannot be empty")
         return v
 
+    @field_validator("feed_id")
+    @classmethod
+    def validate_feed_id(cls, v: str) -> str:
+        """Validate that feed_id is a non-empty string."""
+        if not v or not v.strip():
+            raise ValueError("feed_id cannot be empty")
+        return v.strip()
+
+    @field_validator("turn_number")
+    @classmethod
+    def validate_turn_number(cls, v: int) -> int:
+        """Validate that turn_number is a non-negative integer."""
+        if not isinstance(v, int):
+            raise ValueError("turn_number must be an integer")
+        if v < 0:
+            raise ValueError("turn_number must be >= 0")
+        return v
+
     @classmethod
     def generate_feed_id(cls) -> str:
         return f"feed_{str(uuid.uuid4())}"

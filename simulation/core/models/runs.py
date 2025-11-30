@@ -53,3 +53,31 @@ class Run(BaseModel):
     started_at: str
     status: RunStatus
     completed_at: str | None = None
+
+    @field_validator("run_id")
+    @classmethod
+    def validate_run_id(cls, v: str) -> str:
+        """Validate that run_id is a non-empty string."""
+        if not v or not v.strip():
+            raise ValueError("run_id cannot be empty")
+        return v.strip()
+
+    @field_validator("total_turns")
+    @classmethod
+    def validate_total_turns(cls, v: int) -> int:
+        """Validate that total_turns is an integer greater than zero."""
+        if not isinstance(v, int):
+            raise ValueError("total_turns must be an integer")
+        if v <= 0:
+            raise ValueError("total_turns must be greater than 0")
+        return v
+
+    @field_validator("total_agents")
+    @classmethod
+    def validate_total_agents(cls, v: int) -> int:
+        """Validate that total_agents is an integer greater than zero."""
+        if not isinstance(v, int):
+            raise ValueError("total_agents must be an integer")
+        if v <= 0:
+            raise ValueError("total_agents must be greater than 0")
+        return v

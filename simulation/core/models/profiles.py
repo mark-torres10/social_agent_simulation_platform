@@ -22,6 +22,36 @@ class Profile(BaseModel):
             raise ValueError("handle cannot be empty")
         return v
 
+    @field_validator("followers_count")
+    @classmethod
+    def validate_followers_count(cls, v: int) -> int:
+        """Validate that followers_count is a non-negative integer."""
+        if not isinstance(v, int):
+            raise ValueError("followers_count must be an integer")
+        if v < 0:
+            raise ValueError("followers_count must be >= 0")
+        return v
+
+    @field_validator("follows_count")
+    @classmethod
+    def validate_follows_count(cls, v: int) -> int:
+        """Validate that follows_count is a non-negative integer."""
+        if not isinstance(v, int):
+            raise ValueError("follows_count must be an integer")
+        if v < 0:
+            raise ValueError("follows_count must be >= 0")
+        return v
+
+    @field_validator("posts_count")
+    @classmethod
+    def validate_posts_count(cls, v: int) -> int:
+        """Validate that posts_count is a non-negative integer."""
+        if not isinstance(v, int):
+            raise ValueError("posts_count must be an integer")
+        if v < 0:
+            raise ValueError("posts_count must be >= 0")
+        return v
+
 
 class BlueskyProfile(Profile):
     """Bluesky-specific profile with additional platform fields."""
