@@ -6,9 +6,9 @@ from db.repositories.profile_repository import create_sqlite_profile_repository
 
 def print_profile(profile):
     """Print a profile in a readable format."""
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"Profile: {profile.display_name} (@{profile.handle})")
-    print(f"{'='*80}")
+    print(f"{'=' * 80}")
     print(f"DID: {profile.did}")
     print(f"Bio: {profile.bio[:200]}{'...' if len(profile.bio) > 200 else ''}")
     print(f"Followers: {profile.followers_count:,}")
@@ -18,18 +18,20 @@ def print_profile(profile):
 
 def print_post(post, show_full_text=True):
     """Print a post in a readable format."""
-    print(f"\n{'-'*80}")
+    print(f"\n{'-' * 80}")
     print(f"Post by {post.author_display_name} (@{post.author_handle})")
     print(f"Created: {post.created_at}")
-    print(f"{'-'*80}")
-    
+    print(f"{'-' * 80}")
+
     if show_full_text:
         print(f"Text: {post.text}")
     else:
         text_preview = post.text[:150] + "..." if len(post.text) > 150 else post.text
         print(f"Text: {text_preview}")
-    
-    print(f"Engagement: ❤️ {post.like_count:,} | 💬 {post.reply_count:,} | 🔁 {post.repost_count:,} | 🔖 {post.bookmark_count:,} | 💬 {post.quote_count:,}")
+
+    print(
+        f"Engagement: ❤️ {post.like_count:,} | 💬 {post.reply_count:,} | 🔁 {post.repost_count:,} | 🔖 {post.bookmark_count:,} | 💬 {post.quote_count:,}"
+    )
     print(f"URI: {post.uri}")
 
 
@@ -43,13 +45,13 @@ def main():
     profiles = profile_repo.list_profiles()
     print(f"\n📊 PROFILES ({len(profiles)} total)")
     print("=" * 80)
-    
+
     if not profiles:
         print("No profiles found in database.")
     else:
         for profile in profiles:
             print_profile(profile)
-    
+
     # Read and display posts
     feed_post_repo = create_sqlite_feed_post_repository()
     posts = feed_post_repo.list_all_feed_posts()
@@ -61,8 +63,8 @@ def main():
     else:
         for post in posts:
             print_post(post, show_full_text=False)
-    
-    print(f"\n\n{'='*80}")
+
+    print(f"\n\n{'=' * 80}")
     print(f"Summary: {len(profiles)} profiles, {len(posts)} posts")
     print("=" * 80)
 

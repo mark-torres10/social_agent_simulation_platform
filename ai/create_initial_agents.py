@@ -1,10 +1,12 @@
 """Given the database of Bluesky profiles and feed posts, create a list of agents."""
 
-from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
-from db.repositories.generated_bio_repository import create_sqlite_generated_bio_repository
-from db.repositories.profile_repository import create_sqlite_profile_repository
-from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from ai.agents import SocialMediaAgent
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
+from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from db.repositories.generated_bio_repository import (
+    create_sqlite_generated_bio_repository,
+)
+from db.repositories.profile_repository import create_sqlite_profile_repository
 
 
 def create_initial_agents() -> list[SocialMediaAgent]:
@@ -29,9 +31,9 @@ def create_initial_agents() -> list[SocialMediaAgent]:
     for profile in profiles:
         agent = SocialMediaAgent(profile.handle)
         agent.bio = profile.bio
-        agent.followers: int = profile.followers_count
-        agent.following: int = profile.follows_count
-        agent.posts_count: int = profile.posts_count
+        agent.followers = profile.followers_count
+        agent.following = profile.follows_count
+        agent.posts_count = profile.posts_count
         agent.posts = handle_to_feed_posts.get(profile.handle, [])
         agent.likes = []
         agent.comments = []

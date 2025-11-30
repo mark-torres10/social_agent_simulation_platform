@@ -1,40 +1,41 @@
 """Abstraction for repositories."""
 
-from abc import ABC, abstractmethod
-from typing import Optional, Callable
 import uuid
+from abc import ABC, abstractmethod
+from typing import Callable, Optional
 
-from db.models import RunConfig, Run, RunStatus
 from db.adapters.base import RunDatabaseAdapter
 from db.exceptions import (
-    RunNotFoundError,
     InvalidTransitionError,
     RunCreationError,
+    RunNotFoundError,
     RunStatusUpdateError,
 )
+from db.models import Run, RunConfig, RunStatus
+
 
 class RunRepository(ABC):
     """Abstract base class defining the interface for run repositories."""
-    
+
     @abstractmethod
     def create_run(self, config: RunConfig) -> Run:
         """Create a new run."""
         raise NotImplementedError
-    
+
     @abstractmethod
     def get_run(self, run_id: str) -> Optional[Run]:
         """Get a run by ID."""
         raise NotImplementedError
-    
+
     @abstractmethod
     def list_runs(self) -> list[Run]:
         """List all runs."""
         raise NotImplementedError
-    
+
     @abstractmethod
     def update_run_status(self, run_id: str, status: RunStatus) -> None:
         """Update a run's status.
-        
+
         Raises:
             RunNotFoundError: If the run with the given ID does not exist
             InvalidTransitionError: If the status transition is invalid
@@ -42,43 +43,42 @@ class RunRepository(ABC):
         """
         raise NotImplementedError
 
+
 class SQLiteRunRepository(RunRepository):
     """SQLite implementation of RunRepository.
-    
+
     Uses dependency injection to accept a database adapter and timestamp function,
     decoupling it from concrete implementations.
     """
-    
+
     # Valid state transitions for run status
     VALID_TRANSITIONS = {
         RunStatus.RUNNING: {RunStatus.COMPLETED, RunStatus.FAILED},
         RunStatus.COMPLETED: set(),  # Terminal state
-        RunStatus.FAILED: set(),     # Terminal state
+        RunStatus.FAILED: set(),  # Terminal state
     }
-    
+
     def __init__(
-        self,
-        db_adapter: RunDatabaseAdapter,
-        get_timestamp: Callable[[], str]
+        self, db_adapter: RunDatabaseAdapter, get_timestamp: Callable[[], str]
     ):
         """Initialize repository with injected dependencies.
-        
+
         Args:
             db_adapter: Database adapter for run operations
             get_timestamp: Function that returns current timestamp as string
         """
         self._db_adapter = db_adapter
         self._get_timestamp = get_timestamp
-    
+
     def create_run(self, config: RunConfig) -> Run:
         """Create a new run in SQLite.
-        
+
         Args:
             config: Configuration for the run
-            
+
         Returns:
             The created Run object
-            
+
         Raises:
             RunCreationError: If the run cannot be created due to a database error
         """
@@ -101,31 +101,31 @@ class SQLiteRunRepository(RunRepository):
 
     def get_run(self, run_id: str) -> Optional[Run]:
         """Get a run from SQLite.
-        
+
         Args:
             run_id: Unique identifier for the run
-            
+
         Returns:
             Run model if found, None otherwise
-            
+
         Raises:
             ValueError: If run_id is empty or None
         """
         if not run_id or not run_id.strip():
             raise ValueError("run_id cannot be empty")
         return self._db_adapter.read_run(run_id)
-    
+
     def list_runs(self) -> list[Run]:
         """List all runs from SQLite."""
         return self._db_adapter.read_all_runs()
-    
+
     def update_run_status(self, run_id: str, status: RunStatus) -> None:
         """Update run status in SQLite.
-        
+
         Args:
             run_id: Unique identifier for the run to update
             status: New RunStatus enum value
-            
+
         Raises:
             ValueError: If run_id is empty or status is None
             RunNotFoundError: If the run with the given ID does not exist
@@ -137,14 +137,14 @@ class SQLiteRunRepository(RunRepository):
             raise ValueError("run_id cannot be empty")
         if status is None:
             raise ValueError("status cannot be None")
-        
+
         # Get current run to validate state transition
         current_run = self.get_run(run_id)
         if current_run is None:
             raise RunNotFoundError(run_id)
-        
+
         current_status = current_run.status
-        
+
         # Validate state transition
         if status != current_status:
             valid_next_states = self.VALID_TRANSITIONS.get(current_status, set())
@@ -158,7 +158,7 @@ class SQLiteRunRepository(RunRepository):
                     target_status=status.value,
                     valid_transitions=valid_transitions_list,
                 )
-        
+
         try:
             ts = self._get_timestamp()
             completed_at = ts if status == RunStatus.COMPLETED else None
@@ -172,13 +172,13 @@ class SQLiteRunRepository(RunRepository):
 
 def create_sqlite_repository() -> SQLiteRunRepository:
     """Factory function to create a SQLiteRunRepository with default dependencies.
-    
+
     Returns:
         SQLiteRunRepository configured with SQLite adapter and default timestamp function
     """
     from db.adapters.sqlite import SQLiteRunAdapter
     from lib.utils import get_current_timestamp
+
     return SQLiteRunRepository(
-        db_adapter=SQLiteRunAdapter(),
-        get_timestamp=get_current_timestamp
+        db_adapter=SQLiteRunAdapter(), get_timestamp=get_current_timestamp
     )

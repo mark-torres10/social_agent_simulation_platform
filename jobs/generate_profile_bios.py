@@ -2,20 +2,26 @@
 to use for the agent, and save to the database."""
 
 import os
+
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
 
 from db.db import initialize_database
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
-from db.repositories.generated_bio_repository import create_sqlite_generated_bio_repository
+from db.repositories.generated_bio_repository import (
+    create_sqlite_generated_bio_repository,
+)
 from db.repositories.profile_repository import create_sqlite_profile_repository
-from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from lib.langfuse_telemetry import get_langfuse_client, log_llm_request
 from lib.utils import get_current_timestamp
 
-GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages([
-    ("system", """You are an expert at creating concise and accurate bios
+GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """You are an expert at creating concise and accurate bios
     for users on social media.
 
     Your task is to create a bio that captures the essence of a person based on
@@ -26,9 +32,11 @@ GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages([
     - Capture their personality, interests, and communication style.
     - Be suitable for use in a social media agent simulation.
     - Written in third person
-    """),
-
-    ("human", """Create a bio for this person:
+    """,
+        ),
+        (
+            "human",
+            """Create a bio for this person:
 
     Profile Information:
     - Display Name: {display_name}
@@ -42,9 +50,10 @@ GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages([
     {posts_sample}
 
     Generate a comprehensive bio that captures this person's personality and interests:
-    """
-    ),
-])
+    """,
+        ),
+    ]
+)
 
 load_dotenv()
 
@@ -57,43 +66,47 @@ MAX_POSTS_SAMPLE = 20
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.1)
 langfuse_client = get_langfuse_client()
 
-def get_posts_sample(posts: list[BlueskyFeedPost], max_posts: int = MAX_POSTS_SAMPLE) -> str:
+
+def get_posts_sample(
+    posts: list[BlueskyFeedPost], max_posts: int = MAX_POSTS_SAMPLE
+) -> str:
     """Get a sample of posts formatted for the prompt.
-    
+
     Args:
         posts: List of posts
         max_posts: Maximum number of posts to include
-        
+
     Returns:
         Formatted string of post samples
     """
     if not posts:
         return "No posts available."
-    
+
     sample_posts = posts[:max_posts]
     formatted = []
     for i, post in enumerate(sample_posts, 1):
         # Truncate long posts
         text = post.text[:200] + "..." if len(post.text) > 200 else post.text
         formatted.append(f"{i}. {text}")
-    
+
     return "\n".join(formatted)
+
 
 def generate_bio_for_profile(
     profile: BlueskyProfile, posts: list[BlueskyFeedPost]
 ) -> str:
     """Generate a bio for a profile using Langchain.
-    
+
     Args:
         profile: BlueskyProfile to generate bio for
         posts: List of posts by this profile
         llm: Langchain LLM instance
-        
+
     Returns:
         Generated bio string
     """
     posts_sample = get_posts_sample(posts)
-    
+
     prompt = GENERATE_BIO_PROMPT.format_messages(
         display_name=profile.display_name,
         handle=profile.handle,
@@ -106,6 +119,10 @@ def generate_bio_for_profile(
 
     try:
         response = llm.invoke(prompt)
+        if not isinstance(response.content, str):
+            raise ValueError(
+                f"Expected string response from LLM, got {type(response.content).__name__}"
+            )
         generated_bio = response.content.strip()
         log_llm_request(
             langfuse_client,
@@ -114,7 +131,7 @@ def generate_bio_for_profile(
             output=generated_bio,
             metadata={"display_name": profile.display_name, "num_posts": len(posts)},
         )
-        
+
         return generated_bio
     except Exception as e:
         raise ValueError(f"Error generating bio for {profile.handle}: {e}")
@@ -149,6 +166,7 @@ def main():
     print("Reading all generated bios from database...")
     generated_bios: list[GeneratedBio] = generated_bio_repo.list_all_generated_bios()
     print(f"Found {len(generated_bios)} generated bios.")
+
 
 if __name__ == "__main__":
     main()

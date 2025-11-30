@@ -3,13 +3,14 @@
 These tests use a real SQLite database to test end-to-end functionality.
 """
 
-import pytest
-import tempfile
 import os
+import tempfile
 
-from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+import pytest
+
+from db.db import DB_PATH, initialize_database
 from db.models import BlueskyFeedPost
-from db.db import initialize_database, DB_PATH
+from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 
 
 @pytest.fixture
@@ -17,20 +18,21 @@ def temp_db():
     """Create a temporary database for testing."""
     # Save original DB path
     original_path = DB_PATH
-    
+
     # Create temporary database
-    fd, temp_path = tempfile.mkstemp(suffix='.sqlite')
+    fd, temp_path = tempfile.mkstemp(suffix=".sqlite")
     os.close(fd)
-    
+
     # Monkey-patch DB_PATH
     import db.db
+
     db.db.DB_PATH = temp_path
-    
+
     # Initialize the database
     initialize_database()
-    
+
     yield temp_path
-    
+
     # Cleanup
     db.db.DB_PATH = original_path
     if os.path.exists(temp_path):
@@ -39,7 +41,7 @@ def temp_db():
 
 class TestSQLiteFeedPostRepositoryIntegration:
     """Integration tests using a real database."""
-    
+
     def test_create_and_read_feed_post(self, temp_db):
         """Test creating a feed post and reading it back from the database."""
         repo = create_sqlite_feed_post_repository()
@@ -55,15 +57,17 @@ class TestSQLiteFeedPostRepositoryIntegration:
             repost_count=1,
             created_at="2024-01-01T00:00:00Z",
         )
-        
+
         # Create post
         created_post = repo.create_or_update_feed_post(post)
         assert created_post.uri == "at://did:plc:test123/app.bsky.feed.post/test"
         assert created_post.text == "Test post content"
         assert created_post.like_count == 10
-        
+
         # Read it back
-        retrieved_post = repo.get_feed_post("at://did:plc:test123/app.bsky.feed.post/test")
+        retrieved_post = repo.get_feed_post(
+            "at://did:plc:test123/app.bsky.feed.post/test"
+        )
         assert retrieved_post is not None
         assert retrieved_post.uri == created_post.uri
         assert retrieved_post.author_display_name == created_post.author_display_name
@@ -75,7 +79,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
         assert retrieved_post.reply_count == created_post.reply_count
         assert retrieved_post.repost_count == created_post.repost_count
         assert retrieved_post.created_at == created_post.created_at
-    
+
     def test_create_or_update_feed_posts_batch_persists_to_database(self, temp_db):
         """Test that create_or_update_feed_posts (batch) persists multiple posts to the database."""
         repo = create_sqlite_feed_post_repository()
@@ -94,11 +98,11 @@ class TestSQLiteFeedPostRepositoryIntegration:
             )
             for i in range(1, 4)
         ]
-        
+
         # Create posts in batch
         created_posts = repo.create_or_update_feed_posts(posts)
         assert len(created_posts) == 3
-        
+
         # Read them back individually
         for i, post in enumerate(posts, 1):
             retrieved = repo.get_feed_post(post.uri)
@@ -106,11 +110,11 @@ class TestSQLiteFeedPostRepositoryIntegration:
             assert retrieved.uri == post.uri
             assert retrieved.text == post.text
             assert retrieved.like_count == post.like_count
-    
+
     def test_create_or_update_feed_post_updates_existing_post(self, temp_db):
         """Test that create_or_update_feed_post updates an existing post."""
         repo = create_sqlite_feed_post_repository()
-        
+
         # Create initial post
         initial_post = BlueskyFeedPost(
             uri="at://did:plc:test123/app.bsky.feed.post/test",
@@ -125,7 +129,7 @@ class TestSQLiteFeedPostRepositoryIntegration:
             created_at="2024-01-01T00:00:00Z",
         )
         repo.create_or_update_feed_post(initial_post)
-        
+
         # Update the post
         updated_post = BlueskyFeedPost(
             uri="at://did:plc:test123/app.bsky.feed.post/test",
@@ -140,27 +144,29 @@ class TestSQLiteFeedPostRepositoryIntegration:
             created_at="2024-01-01T00:00:00Z",
         )
         repo.create_or_update_feed_post(updated_post)
-        
+
         # Verify update
-        retrieved_post = repo.get_feed_post("at://did:plc:test123/app.bsky.feed.post/test")
+        retrieved_post = repo.get_feed_post(
+            "at://did:plc:test123/app.bsky.feed.post/test"
+        )
         assert retrieved_post is not None
         assert retrieved_post.uri == "at://did:plc:test123/app.bsky.feed.post/test"
         assert retrieved_post.text == "Updated content with more text"
         assert retrieved_post.like_count == 200
         assert retrieved_post.reply_count == 25
         assert retrieved_post.repost_count == 15
-    
+
     def test_get_feed_post_raises_value_error_for_nonexistent_uri(self, temp_db):
         """Test that get_feed_post raises ValueError for a non-existent URI."""
         repo = create_sqlite_feed_post_repository()
-        
+
         with pytest.raises(ValueError, match="No feed post found for uri"):
             repo.get_feed_post("at://did:plc:nonexistent/app.bsky.feed.post/test")
-    
+
     def test_list_feed_posts_by_author_retrieves_correct_posts(self, temp_db):
         """Test that list_feed_posts_by_author filters correctly by author."""
         repo = create_sqlite_feed_post_repository()
-        
+
         # Create posts by different authors
         post1 = BlueskyFeedPost(
             uri="at://did:plc:alice/app.bsky.feed.post/post1",
@@ -198,11 +204,11 @@ class TestSQLiteFeedPostRepositoryIntegration:
             repost_count=3,
             created_at="2024-01-03T00:00:00Z",
         )
-        
+
         repo.create_or_update_feed_post(post1)
         repo.create_or_update_feed_post(post2)
         repo.create_or_update_feed_post(post3)
-        
+
         # List posts by Alice
         alice_posts = repo.list_feed_posts_by_author("alice.bsky.social")
         assert len(alice_posts) == 2
@@ -211,16 +217,16 @@ class TestSQLiteFeedPostRepositoryIntegration:
             "at://did:plc:alice/app.bsky.feed.post/post1",
             "at://did:plc:alice/app.bsky.feed.post/post2",
         }
-        
+
         # List posts by Bob
         bob_posts = repo.list_feed_posts_by_author("bob.bsky.social")
         assert len(bob_posts) == 1
         assert bob_posts[0].uri == "at://did:plc:bob/app.bsky.feed.post/post1"
-    
+
     def test_list_all_feed_posts_retrieves_all_posts(self, temp_db):
         """Test that list_all_feed_posts retrieves all posts from the database."""
         repo = create_sqlite_feed_post_repository()
-        
+
         # Create multiple posts
         posts = [
             BlueskyFeedPost(
@@ -237,13 +243,13 @@ class TestSQLiteFeedPostRepositoryIntegration:
             )
             for i in range(1, 4)
         ]
-        
+
         for post in posts:
             repo.create_or_update_feed_post(post)
-        
+
         # List all posts
         all_posts = repo.list_all_feed_posts()
-        
+
         # Assert
         assert len(all_posts) == 3
         uris = {p.uri for p in all_posts}
@@ -252,33 +258,37 @@ class TestSQLiteFeedPostRepositoryIntegration:
             "at://did:plc:test2/app.bsky.feed.post/test2",
             "at://did:plc:test3/app.bsky.feed.post/test3",
         }
-        
+
         # Verify all fields are correct
         post_dict = {p.uri: p for p in all_posts}
-        assert post_dict["at://did:plc:test1/app.bsky.feed.post/test1"].text == "Post 1 content"
+        assert (
+            post_dict["at://did:plc:test1/app.bsky.feed.post/test1"].text
+            == "Post 1 content"
+        )
         assert post_dict["at://did:plc:test2/app.bsky.feed.post/test2"].like_count == 20
         assert post_dict["at://did:plc:test3/app.bsky.feed.post/test3"].reply_count == 9
-    
+
     def test_list_all_feed_posts_returns_empty_list_when_no_posts(self, temp_db):
         """Test that list_all_feed_posts returns an empty list when no posts exist."""
         repo = create_sqlite_feed_post_repository()
-        
+
         posts = repo.list_all_feed_posts()
         assert posts == []
         assert isinstance(posts, list)
-    
+
     def test_list_feed_posts_by_author_returns_empty_list_when_not_found(self, temp_db):
         """Test that list_feed_posts_by_author returns empty list when no posts found."""
         repo = create_sqlite_feed_post_repository()
-        
+
         posts = repo.list_feed_posts_by_author("nonexistent.bsky.social")
         assert posts == []
         assert isinstance(posts, list)
-    
+
     def test_create_or_update_feed_post_with_empty_uri_raises_error(self, temp_db):
         """Test that creating BlueskyFeedPost with empty uri raises ValidationError from Pydantic."""
         # Pydantic validation happens at model creation time, not in repository
         from pydantic import ValidationError
+
         with pytest.raises(ValidationError) as exc_info:
             BlueskyFeedPost(
                 uri="",
@@ -292,27 +302,27 @@ class TestSQLiteFeedPostRepositoryIntegration:
                 repost_count=1,
                 created_at="2024-01-01T00:00:00Z",
             )
-        
+
         assert "uri cannot be empty" in str(exc_info.value)
-    
+
     def test_get_feed_post_with_empty_uri_raises_error(self, temp_db):
         """Test that get_feed_post raises ValueError when uri is empty."""
         repo = create_sqlite_feed_post_repository()
-        
+
         with pytest.raises(ValueError, match="uri cannot be empty"):
             repo.get_feed_post("")
-    
+
     def test_list_feed_posts_by_author_with_empty_handle_raises_error(self, temp_db):
         """Test that list_feed_posts_by_author raises ValueError when author_handle is empty."""
         repo = create_sqlite_feed_post_repository()
-        
+
         with pytest.raises(ValueError, match="author_handle cannot be empty"):
             repo.list_feed_posts_by_author("")
-    
+
     def test_feed_post_with_long_text(self, temp_db):
         """Test that feed posts with long text are handled correctly."""
         repo = create_sqlite_feed_post_repository()
-        
+
         long_text = "This is a very long post. " * 100  # 2500+ characters
         post = BlueskyFeedPost(
             uri="at://did:plc:longpost/app.bsky.feed.post/test",
@@ -326,11 +336,10 @@ class TestSQLiteFeedPostRepositoryIntegration:
             repost_count=1,
             created_at="2024-01-01T00:00:00Z",
         )
-        
+
         repo.create_or_update_feed_post(post)
         retrieved = repo.get_feed_post("at://did:plc:longpost/app.bsky.feed.post/test")
-        
+
         assert retrieved is not None
         assert retrieved.text == long_text
         assert len(retrieved.text) > 2000
-
