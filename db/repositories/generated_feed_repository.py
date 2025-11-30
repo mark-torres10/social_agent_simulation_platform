@@ -119,13 +119,13 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
             
         Note:
             turn_number is validated by the function signature (int type), so it cannot be None.
-            agent_handle and run_id are validated here as function parameters.
+            Pydantic validators only run when creating models. Since this method accepts raw string
+            parameters (not a GeneratedFeed model), we validate agent_handle and run_id here.
         """
         if not agent_handle or not agent_handle.strip():
             raise ValueError("agent_handle cannot be empty")
         if not run_id or not run_id.strip():
             raise ValueError("run_id cannot be empty")
-        # Note: These validations are for function parameters, not model fields
         return self._db_adapter.read_generated_feed(agent_handle, run_id, turn_number)
     
     def list_all_generated_feeds(self) -> list[GeneratedFeed]:
@@ -149,6 +149,10 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
             
         Raises:
             ValueError: If agent_handle or run_id is empty
+            
+        Note:
+            Pydantic validators only run when creating models. Since this method accepts raw string
+            parameters (not a GeneratedFeed model), we validate agent_handle and run_id here.
         """
         if not agent_handle or not agent_handle.strip():
             raise ValueError("agent_handle cannot be empty")

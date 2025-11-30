@@ -88,6 +88,10 @@ class SQLiteProfileRepository(ProfileRepository):
             
         Raises:
             ValueError: If handle is empty or None
+            
+        Note:
+            Pydantic validators only run when creating models. Since this method accepts a raw string
+            parameter (not a BlueskyProfile model), we validate handle here.
         """
         if not handle or not handle.strip():
             raise ValueError("handle cannot be empty")

@@ -138,11 +138,13 @@ class SQLiteFeedPostRepository(FeedPostRepository):
             
         Raises:
             ValueError: If uri is empty or if no feed post is found for the given URI
+            
+        Note:
+            Pydantic validators only run when creating models. Since this method accepts a raw string
+            parameter (not a BlueskyFeedPost model), we validate uri here.
         """
         if not uri or not uri.strip():
             raise ValueError("uri cannot be empty")
-        # Note: uri validation here is for the function parameter, not the model
-        # The adapter may return a model, but we validate the input parameter here
         return self._db_adapter.read_feed_post(uri)
     
     def list_feed_posts_by_author(self, author_handle: str) -> list[BlueskyFeedPost]:
@@ -156,6 +158,10 @@ class SQLiteFeedPostRepository(FeedPostRepository):
             
         Raises:
             ValueError: If author_handle is empty or None
+            
+        Note:
+            Pydantic validators only run when creating models. Since this method accepts a raw string
+            parameter (not a BlueskyFeedPost model), we validate author_handle here.
         """
         if not author_handle or not author_handle.strip():
             raise ValueError("author_handle cannot be empty")
