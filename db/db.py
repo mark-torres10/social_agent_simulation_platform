@@ -767,7 +767,8 @@ def read_all_generated_bios() -> list[GeneratedBio]:
         bios = []
         for row in rows:
             # Validate required fields are not NULL
-            context = f"generated bio handle={row.get('handle', 'unknown')}"
+            handle_value = row["handle"] if row["handle"] is not None else "unknown"
+            context = f"generated bio handle={handle_value}"
             _validate_generated_bio_row(row, context=context)
             
             bios.append(GeneratedBio(

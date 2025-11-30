@@ -157,7 +157,7 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         """Test that generated bios with long text content are handled correctly."""
         repo = create_sqlite_generated_bio_repository()
         
-        long_bio_text = "This is a very long bio. " * 100  # 2500+ characters
+        long_bio_text = "This is a very long bio. " * 100  # 2500 characters
         bio = GeneratedBio(
             handle="longbio.bsky.social",
             generated_bio=long_bio_text,
@@ -169,7 +169,7 @@ class TestSQLiteGeneratedBioRepositoryIntegration:
         
         assert retrieved is not None
         assert retrieved.generated_bio == long_bio_text
-        assert len(retrieved.generated_bio) > 2500
+        assert len(retrieved.generated_bio) >= 2500
     
     def test_multiple_bios_with_different_handles(self, temp_db):
         """Test that multiple bios with different handles can coexist."""
