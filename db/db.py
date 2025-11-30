@@ -1,7 +1,20 @@
 """Database operations for the agent simulation platform.
 
-Provides read/write operations for Bluesky profiles and feed posts
-using SQLite.
+This module contains internal SQLite implementation functions used by the
+SQLite adapters. These functions are NOT part of the public API.
+
+External code should use the Repository/Adapter pattern instead:
+- ProfileRepository for profile operations
+- FeedPostRepository for feed post operations
+- GeneratedFeedRepository for generated feed operations
+- RunRepository for run operations
+
+The functions in this module are implementation details and may change
+without notice. They are used internally by:
+- db.adapters.sqlite.profile_adapter
+- db.adapters.sqlite.feed_post_adapter
+- db.adapters.sqlite.generated_feed_adapter
+- db.adapters.sqlite.run_adapter
 """
 
 import json
@@ -14,6 +27,7 @@ from db.exceptions import RunNotFoundError
 from lib.utils import get_current_timestamp
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db.sqlite")
+
 
 
 def get_connection() -> sqlite3.Connection:
@@ -111,6 +125,9 @@ def initialize_database() -> None:
 def write_profile(profile: BlueskyProfile) -> None:
     """Write a Bluesky profile to the database.
     
+    INTERNAL: This function is an implementation detail used by SQLiteProfileAdapter.
+    External code should use ProfileRepository.create_or_update_profile() instead.
+    
     Args:
         profile: BlueskyProfile model to write
         
@@ -137,6 +154,9 @@ def write_profile(profile: BlueskyProfile) -> None:
 
 def write_feed_post(post: BlueskyFeedPost) -> None:
     """Write a Bluesky feed post to the database.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteFeedPostAdapter.
+    External code should use FeedPostRepository.create_or_update_feed_post() instead.
     
     Args:
         post: BlueskyFeedPost model to write
@@ -169,9 +189,12 @@ def write_feed_post(post: BlueskyFeedPost) -> None:
 def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
     """Write multiple Bluesky feed posts to the database (batch operation).
     
+    INTERNAL: This function is an implementation detail used by SQLiteFeedPostAdapter.
+    External code should use FeedPostRepository.create_or_update_feed_posts() instead.
+    
     This function uses executemany for efficient batch insertion. All posts
-    are written in a single transaction. If any post fails, the entire batch
-    will fail.
+    are written in a single atomic transaction. If any post fails, the entire
+    batch will be rolled back.
     
     Args:
         posts: List of BlueskyFeedPost models to write. Empty list is allowed
@@ -181,28 +204,35 @@ def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
         sqlite3.IntegrityError: If any uri violates constraints
         sqlite3.OperationalError: If database operation fails
     """
+    if not posts:
+        return
+    
     with get_connection() as conn:
-        conn.executemany("""
-            INSERT OR REPLACE INTO bluesky_feed_posts
-            (uri, author_display_name, author_handle, text, bookmark_count,
-             like_count, quote_count, reply_count, repost_count, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, [
-            (
-                post.uri,
-                post.author_display_name,
-                post.author_handle,
-                post.text,
-                post.bookmark_count,
-                post.like_count,
-                post.quote_count,
-                post.reply_count,
-                post.repost_count,
-                post.created_at,
-            )
-            for post in posts
-        ])
-        conn.commit()
+        try:
+            conn.executemany("""
+                INSERT OR REPLACE INTO bluesky_feed_posts
+                (uri, author_display_name, author_handle, text, bookmark_count,
+                 like_count, quote_count, reply_count, repost_count, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, [
+                (
+                    post.uri,
+                    post.author_display_name,
+                    post.author_handle,
+                    post.text,
+                    post.bookmark_count,
+                    post.like_count,
+                    post.quote_count,
+                    post.reply_count,
+                    post.repost_count,
+                    post.created_at,
+                )
+                for post in posts
+            ])
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
 
 def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
@@ -227,8 +257,15 @@ def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
 def write_generated_feed(feed: GeneratedFeed) -> None:
     """Write a generated feed to the database.
     
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedFeedAdapter.
+    External code should use GeneratedFeedRepository.create_or_update_generated_feed() instead.
+    
     Args:
         feed: GeneratedFeed model to write
+        
+    Raises:
+        sqlite3.IntegrityError: If composite key (agent_handle, run_id, turn_number) violates constraints
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         conn.execute("""
@@ -247,6 +284,9 @@ def write_generated_feed(feed: GeneratedFeed) -> None:
 
 def write_run(run: Run) -> None:
     """Write a run to the database.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteRunAdapter.
+    External code should use RunRepository.create_or_update_run() instead.
     
     This function creates or replaces a single run record within 
     its own transaction scope. If you need to perform multi-table 
@@ -287,6 +327,9 @@ def write_run(run: Run) -> None:
 def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> GeneratedFeed:
     """Read a generated feed by agent_handle, run_id, and turn_number.
     
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedFeedAdapter.
+    External code should use GeneratedFeedRepository.get_generated_feed() instead.
+    
     Args:
         agent_handle: Agent handle to look up
         run_id: Run ID to look up
@@ -297,6 +340,9 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
         
     Raises:
         ValueError: If no feed is found for the given agent_handle, run_id, and turn_number
+        ValueError: If the feed data is invalid (NULL fields)
+        KeyError: If required columns are missing from the database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         row = conn.execute(
@@ -308,6 +354,10 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
             # this isn't supposed to happen, so we want to raise an error if it does.
             raise ValueError(f"Generated feed not found for agent {agent_handle}, run {run_id}, turn {turn_number}")
         
+        # Validate required fields are not NULL
+        context = f"generated feed agent_handle={agent_handle}, run_id={run_id}, turn_number={turn_number}"
+        _validate_generated_feed_row(row, context=context)
+        
         return GeneratedFeed(
             feed_id=row["feed_id"],
             run_id=row["run_id"],
@@ -316,6 +366,35 @@ def read_generated_feed(agent_handle: str, run_id: str, turn_number: int) -> Gen
             post_uris=json.loads(row["post_uris"]),
             created_at=row["created_at"],
         )
+
+
+def _validate_generated_feed_row(row: sqlite3.Row, context: str | None = None) -> None:
+    """Validate that all required generated feed fields are not NULL.
+    
+    Args:
+        row: SQLite Row object containing generated feed data
+        context: Optional context string to include in error messages
+                 (e.g., "generated feed agent_handle=user.bsky.social, run_id=...")
+    
+    Raises:
+        ValueError: If any required field is NULL. Error message includes
+                    the field name and optional context.
+    """
+    required_fields = [
+        "feed_id",
+        "run_id",
+        "turn_number",
+        "agent_handle",
+        "post_uris",
+        "created_at",
+    ]
+    
+    for field in required_fields:
+        if row[field] is None:
+            error_msg = f"{field} cannot be NULL"
+            if context:
+                error_msg = f"{error_msg} (context: {context})"
+            raise ValueError(error_msg)
 
 
 def _validate_feed_post_row(row: sqlite3.Row, context: str | None = None) -> None:
@@ -353,6 +432,9 @@ def _validate_feed_post_row(row: sqlite3.Row, context: str | None = None) -> Non
 
 def read_profile(handle: str) -> Optional[BlueskyProfile]:
     """Read a Bluesky profile by handle.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteProfileAdapter.
+    External code should use ProfileRepository.get_profile() instead.
     
     Args:
         handle: Profile handle to look up
@@ -404,6 +486,9 @@ def read_profile(handle: str) -> Optional[BlueskyProfile]:
 def read_all_profiles() -> list[BlueskyProfile]:
     """Read all Bluesky profiles from the database.
     
+    INTERNAL: This function is an implementation detail used by SQLiteProfileAdapter.
+    External code should use ProfileRepository.list_profiles() instead.
+    
     Returns:
         List of all BlueskyProfile models. Returns empty list if no profiles exist.
         
@@ -446,20 +531,27 @@ def read_all_profiles() -> list[BlueskyProfile]:
         return profiles
 
 
-def read_feed_post(uri: str) -> Optional[BlueskyFeedPost]:
+def read_feed_post(uri: str) -> BlueskyFeedPost:
     """Read a Bluesky feed post by URI.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteFeedPostAdapter.
+    External code should use FeedPostRepository.get_feed_post() instead.
     
     Args:
         uri: Post URI to look up
         
     Returns:
-        BlueskyFeedPost if found, None otherwise
+        BlueskyFeedPost model if found.
         
     Raises:
+        ValueError: If uri is empty or if no feed post is found for the given URI
         ValueError: If the feed post data is invalid (NULL fields)
         KeyError: If required columns are missing from the database row
         sqlite3.OperationalError: If database operation fails
     """
+    if not uri or not uri.strip():
+        raise ValueError("uri cannot be empty")
+    
     with get_connection() as conn:
         row = conn.execute(
             "SELECT * FROM bluesky_feed_posts WHERE uri = ?",
@@ -467,7 +559,7 @@ def read_feed_post(uri: str) -> Optional[BlueskyFeedPost]:
         ).fetchone()
         
         if row is None:
-            return None
+            raise ValueError(f"No feed post found for uri: {uri}")
         
         # Validate required fields are not NULL
         context = f"feed post uri={uri}"
@@ -489,6 +581,9 @@ def read_feed_post(uri: str) -> Optional[BlueskyFeedPost]:
 
 def read_feed_posts_by_author(author_handle: str) -> list[BlueskyFeedPost]:
     """Read all feed posts by a specific author.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteFeedPostAdapter.
+    External code should use FeedPostRepository.list_feed_posts_by_author() instead.
     
     Args:
         author_handle: Author handle to filter by
@@ -537,6 +632,9 @@ def read_feed_posts_by_author(author_handle: str) -> list[BlueskyFeedPost]:
 
 def read_all_feed_posts() -> list[BlueskyFeedPost]:
     """Read all Bluesky feed posts from the database.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteFeedPostAdapter.
+    External code should use FeedPostRepository.list_all_feed_posts() instead.
     
     Returns:
         List of all BlueskyFeedPost models
@@ -598,36 +696,69 @@ def read_all_generated_bios() -> list[GeneratedBio]:
 def read_all_generated_feeds() -> list[GeneratedFeed]:
     """Read all generated feeds from the database.
     
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedFeedAdapter.
+    External code should use GeneratedFeedRepository.list_all_generated_feeds() instead.
+    
     Returns:
         List of all GeneratedFeed models
+        
+    Raises:
+        ValueError: If any feed data is invalid (NULL fields)
+        KeyError: If required columns are missing from any database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM generated_feeds").fetchall()
-        return [
-            GeneratedFeed(
+        
+        feeds = []
+        for row in rows:
+            # Validate required fields are not NULL
+            # Try to get identifying info for context, fallback if unavailable
+            try:
+                agent_handle_value = row["agent_handle"] if row["agent_handle"] is not None else "unknown"
+                run_id_value = row["run_id"] if row["run_id"] is not None else "unknown"
+                turn_number_value = row["turn_number"] if row["turn_number"] is not None else "unknown"
+                context = f"generated feed agent_handle={agent_handle_value}, run_id={run_id_value}, turn_number={turn_number_value}"
+            except (KeyError, TypeError):
+                context = "generated feed (identifying info unavailable)"
+            
+            _validate_generated_feed_row(row, context=context)
+            
+            feeds.append(GeneratedFeed(
                 feed_id=row["feed_id"],
                 run_id=row["run_id"],
                 turn_number=row["turn_number"],
                 agent_handle=row["agent_handle"],
                 post_uris=json.loads(row["post_uris"]),
                 created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+            ))
+        
+        return feeds
 
 
-def load_feed_post_uris_from_current_run(
-    agent_handle: str, run_id: str
-) -> set[str]:
-    """Load the feed post URIs from the current run.
+def read_post_uris_for_run(agent_handle: str, run_id: str) -> set[str]:
+    """Read all post URIs from generated feeds for a specific agent and run.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedFeedAdapter.
+    External code should use GeneratedFeedRepository.get_post_uris_for_run() instead.
     
     Args:
-        agent_handle: Agent handle to look up
-        run_id: Run ID to look up
+        agent_handle: Agent handle to filter by
+        run_id: Run ID to filter by
         
     Returns:
-        Set of feed post URIs
+        Set of post URIs from all generated feeds matching the agent and run.
+        Returns empty set if no feeds found.
+        
+    Raises:
+        ValueError: If agent_handle or run_id is empty
+        sqlite3.OperationalError: If database operation fails
     """
+    if not agent_handle or not agent_handle.strip():
+        raise ValueError("agent_handle cannot be empty")
+    if not run_id or not run_id.strip():
+        raise ValueError("run_id cannot be empty")
+    
     with get_connection() as conn:
         rows = conn.execute("""
             SELECT post_uris
@@ -686,6 +817,9 @@ def _row_to_run(row: sqlite3.Row) -> Run:
 def read_run(run_id: str) -> Optional[Run]:
     """Read a run by run_id.
     
+    INTERNAL: This function is an implementation detail used by SQLiteRunAdapter.
+    External code should use RunRepository.get_run() instead.
+    
     Args:
         run_id: Unique identifier for the run
         
@@ -711,6 +845,9 @@ def read_run(run_id: str) -> Optional[Run]:
 def read_all_runs() -> list[Run]:
     """Read all runs, ordered by created_at descending.
     
+    INTERNAL: This function is an implementation detail used by SQLiteRunAdapter.
+    External code should use RunRepository.list_runs() instead.
+    
     Returns:
         List of Run models, ordered by created_at descending (newest first).
         Returns empty list if no runs exist.
@@ -729,6 +866,9 @@ def read_all_runs() -> list[Run]:
 
 def update_run_status(run_id: str, status: str, completed_at: Optional[str] = None) -> None:
     """Update a run's status.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteRunAdapter.
+    External code should use RunRepository.update_run_status() instead.
     
     Args:
         run_id: Unique identifier for the run to update

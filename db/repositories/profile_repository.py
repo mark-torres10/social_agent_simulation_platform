@@ -69,13 +69,11 @@ class SQLiteProfileRepository(ProfileRepository):
             The created or updated BlueskyProfile object
             
         Raises:
-            ValueError: If profile.handle is empty
+            ValueError: If profile.handle is empty (validated by Pydantic model)
             sqlite3.IntegrityError: If handle violates constraints (from adapter)
             sqlite3.OperationalError: If database operation fails (from adapter)
         """
-        if not profile.handle or not profile.handle.strip():
-            raise ValueError("profile.handle cannot be empty")
-        
+        # Validation is handled by Pydantic model (BlueskyProfile.validate_handle)
         self._db_adapter.write_profile(profile)
         return profile
     
@@ -90,6 +88,10 @@ class SQLiteProfileRepository(ProfileRepository):
             
         Raises:
             ValueError: If handle is empty or None
+            
+        Note:
+            Pydantic validators only run when creating models. Since this method accepts a raw string
+            parameter (not a BlueskyProfile model), we validate handle here.
         """
         if not handle or not handle.strip():
             raise ValueError("handle cannot be empty")

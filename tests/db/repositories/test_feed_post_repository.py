@@ -3,6 +3,7 @@
 import pytest
 import sqlite3
 from unittest.mock import Mock
+from pydantic import ValidationError
 from db.repositories.feed_post_repository import SQLiteFeedPostRepository
 from db.adapters.base import FeedPostDatabaseAdapter
 from db.models import BlueskyFeedPost
@@ -92,53 +93,45 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPost:
         assert call_args.text == result.text
         assert call_args.author_handle == result.author_handle
     
-    def test_raises_value_error_when_uri_is_empty(self):
-        """Test that create_or_update_feed_post raises ValueError when uri is empty."""
-        # Arrange
-        mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
-        repo = SQLiteFeedPostRepository(mock_adapter)
-        post = BlueskyFeedPost(
-            uri="",
-            author_display_name="Test User",
-            author_handle="test.bsky.social",
-            text="Test post content",
-            bookmark_count=5,
-            like_count=10,
-            quote_count=2,
-            reply_count=3,
-            repost_count=1,
-            created_at="2024-01-01T00:00:00Z",
-        )
+    def test_raises_validation_error_when_uri_is_empty(self):
+        """Test that creating BlueskyFeedPost with empty uri raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            BlueskyFeedPost(
+                uri="",
+                author_display_name="Test User",
+                author_handle="test.bsky.social",
+                text="Test post content",
+                bookmark_count=5,
+                like_count=10,
+                quote_count=2,
+                reply_count=3,
+                repost_count=1,
+                created_at="2024-01-01T00:00:00Z",
+            )
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="uri cannot be empty"):
-            repo.create_or_update_feed_post(post)
-        
-        mock_adapter.write_feed_post.assert_not_called()
+        assert "uri cannot be empty" in str(exc_info.value)
     
-    def test_raises_value_error_when_uri_is_whitespace(self):
-        """Test that create_or_update_feed_post raises ValueError when uri is whitespace."""
-        # Arrange
-        mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
-        repo = SQLiteFeedPostRepository(mock_adapter)
-        post = BlueskyFeedPost(
-            uri="   ",
-            author_display_name="Test User",
-            author_handle="test.bsky.social",
-            text="Test post content",
-            bookmark_count=5,
-            like_count=10,
-            quote_count=2,
-            reply_count=3,
-            repost_count=1,
-            created_at="2024-01-01T00:00:00Z",
-        )
+    def test_raises_validation_error_when_uri_is_whitespace(self):
+        """Test that creating BlueskyFeedPost with whitespace uri raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            BlueskyFeedPost(
+                uri="   ",
+                author_display_name="Test User",
+                author_handle="test.bsky.social",
+                text="Test post content",
+                bookmark_count=5,
+                like_count=10,
+                quote_count=2,
+                reply_count=3,
+                repost_count=1,
+                created_at="2024-01-01T00:00:00Z",
+            )
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="uri cannot be empty"):
-            repo.create_or_update_feed_post(post)
-        
-        mock_adapter.write_feed_post.assert_not_called()
+        assert "uri cannot be empty" in str(exc_info.value)
     
     def test_propagates_adapter_exception_when_write_fails(self):
         """Test that create_or_update_feed_post propagates adapter exceptions when database write fails."""
@@ -225,43 +218,40 @@ class TestSQLiteFeedPostRepositoryCreateOrUpdateFeedPosts:
         
         mock_adapter.write_feed_posts.assert_not_called()
     
-    def test_raises_value_error_when_any_uri_is_empty(self):
-        """Test that create_or_update_feed_posts raises ValueError when any uri is empty."""
-        # Arrange
-        mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
-        repo = SQLiteFeedPostRepository(mock_adapter)
-        posts = [
-            BlueskyFeedPost(
-                uri="at://did:plc:test1/app.bsky.feed.post/test1",
-                author_display_name="User 1",
-                author_handle="user1.bsky.social",
-                text="Post 1 content",
-                bookmark_count=1,
-                like_count=10,
-                quote_count=2,
-                reply_count=3,
-                repost_count=1,
-                created_at="2024-01-01T00:00:00Z",
-            ),
-            BlueskyFeedPost(
-                uri="",  # Empty URI
-                author_display_name="User 2",
-                author_handle="user2.bsky.social",
-                text="Post 2 content",
-                bookmark_count=2,
-                like_count=20,
-                quote_count=4,
-                reply_count=6,
-                repost_count=2,
-                created_at="2024-01-02T00:00:00Z",
-            ),
-        ]
+    def test_raises_validation_error_when_any_uri_is_empty(self):
+        """Test that creating BlueskyFeedPost with empty uri raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        # The second post will fail validation when created
+        with pytest.raises(ValidationError) as exc_info:
+            [
+                BlueskyFeedPost(
+                    uri="at://did:plc:test1/app.bsky.feed.post/test1",
+                    author_display_name="User 1",
+                    author_handle="user1.bsky.social",
+                    text="Post 1 content",
+                    bookmark_count=1,
+                    like_count=10,
+                    quote_count=2,
+                    reply_count=3,
+                    repost_count=1,
+                    created_at="2024-01-01T00:00:00Z",
+                ),
+                BlueskyFeedPost(
+                    uri="",  # Empty URI
+                    author_display_name="User 2",
+                    author_handle="user2.bsky.social",
+                    text="Post 2 content",
+                    bookmark_count=2,
+                    like_count=20,
+                    quote_count=4,
+                    reply_count=6,
+                    repost_count=2,
+                    created_at="2024-01-02T00:00:00Z",
+                ),
+            ]
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="uri cannot be empty"):
-            repo.create_or_update_feed_posts(posts)
-        
-        mock_adapter.write_feed_posts.assert_not_called()
+        assert "uri cannot be empty" in str(exc_info.value)
     
     def test_propagates_adapter_exception_when_batch_write_fails(self):
         """Test that create_or_update_feed_posts propagates adapter exceptions when batch write fails."""
@@ -323,18 +313,17 @@ class TestSQLiteFeedPostRepositoryGetFeedPost:
         assert result == expected_post
         mock_adapter.read_feed_post.assert_called_once_with("at://did:plc:test123/app.bsky.feed.post/test")
     
-    def test_gets_feed_post_when_not_found(self):
-        """Test that get_feed_post returns None when post is not found."""
+    def test_raises_value_error_when_feed_post_not_found(self):
+        """Test that get_feed_post raises ValueError when post is not found."""
         # Arrange
         mock_adapter = Mock(spec=FeedPostDatabaseAdapter)
-        mock_adapter.read_feed_post.return_value = None
+        mock_adapter.read_feed_post.side_effect = ValueError("No feed post found for uri: at://did:plc:nonexistent/app.bsky.feed.post/test")
         repo = SQLiteFeedPostRepository(mock_adapter)
         
-        # Act
-        result = repo.get_feed_post("at://did:plc:nonexistent/app.bsky.feed.post/test")
+        # Act & Assert
+        with pytest.raises(ValueError, match="No feed post found for uri"):
+            repo.get_feed_post("at://did:plc:nonexistent/app.bsky.feed.post/test")
         
-        # Assert
-        assert result is None
         mock_adapter.read_feed_post.assert_called_once_with("at://did:plc:nonexistent/app.bsky.feed.post/test")
     
     def test_raises_value_error_when_uri_is_empty(self):

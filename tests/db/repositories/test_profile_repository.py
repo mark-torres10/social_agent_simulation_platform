@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import Mock
+from pydantic import ValidationError
 from db.repositories.profile_repository import SQLiteProfileRepository
 from db.adapters.base import ProfileDatabaseAdapter
 from db.models import BlueskyProfile
@@ -82,47 +83,39 @@ class TestSQLiteProfileRepositoryCreateOrUpdateProfile:
         assert call_args.display_name == result.display_name
         assert call_args.bio == result.bio
     
-    def test_raises_value_error_when_handle_is_empty(self):
-        """Test that create_or_update_profile raises ValueError when handle is empty."""
-        # Arrange
-        mock_adapter = Mock(spec=ProfileDatabaseAdapter)
-        repo = SQLiteProfileRepository(mock_adapter)
-        profile = BlueskyProfile(
-            handle="",
-            did="did:plc:test123",
-            display_name="Test User",
-            bio="Test bio",
-            followers_count=100,
-            follows_count=50,
-            posts_count=25,
-        )
+    def test_raises_validation_error_when_handle_is_empty(self):
+        """Test that creating BlueskyProfile with empty handle raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            BlueskyProfile(
+                handle="",
+                did="did:plc:test123",
+                display_name="Test User",
+                bio="Test bio",
+                followers_count=100,
+                follows_count=50,
+                posts_count=25,
+            )
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="handle cannot be empty"):
-            repo.create_or_update_profile(profile)
-        
-        mock_adapter.write_profile.assert_not_called()
+        assert "handle cannot be empty" in str(exc_info.value)
     
-    def test_raises_value_error_when_handle_is_whitespace(self):
-        """Test that create_or_update_profile raises ValueError when handle is whitespace."""
-        # Arrange
-        mock_adapter = Mock(spec=ProfileDatabaseAdapter)
-        repo = SQLiteProfileRepository(mock_adapter)
-        profile = BlueskyProfile(
-            handle="   ",
-            did="did:plc:test123",
-            display_name="Test User",
-            bio="Test bio",
-            followers_count=100,
-            follows_count=50,
-            posts_count=25,
-        )
+    def test_raises_validation_error_when_handle_is_whitespace(self):
+        """Test that creating BlueskyProfile with whitespace handle raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            BlueskyProfile(
+                handle="   ",
+                did="did:plc:test123",
+                display_name="Test User",
+                bio="Test bio",
+                followers_count=100,
+                follows_count=50,
+                posts_count=25,
+            )
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="handle cannot be empty"):
-            repo.create_or_update_profile(profile)
-        
-        mock_adapter.write_profile.assert_not_called()
+        assert "handle cannot be empty" in str(exc_info.value)
     
     def test_propagates_adapter_exception_when_write_fails(self):
         """Test that create_or_update_profile propagates adapter exceptions when database write fails."""

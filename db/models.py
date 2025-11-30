@@ -31,6 +31,13 @@ class BlueskyProfile(BaseModel):
     followers_count: int
     follows_count: int
     posts_count: int
+    
+    @field_validator('handle')
+    @classmethod
+    def validate_handle(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError('handle cannot be empty')
+        return v
 
 
 class BlueskyFeedPost(BaseModel):
@@ -44,6 +51,20 @@ class BlueskyFeedPost(BaseModel):
     reply_count: int
     repost_count: int
     created_at: str
+    
+    @field_validator('uri')
+    @classmethod
+    def validate_uri(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError('uri cannot be empty')
+        return v
+    
+    @field_validator('author_handle')
+    @classmethod
+    def validate_author_handle(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError('author_handle cannot be empty')
+        return v
 
 
 class GeneratedBio(BaseModel):
@@ -63,6 +84,20 @@ class GeneratedFeed(BaseModel):
     agent_handle: str
     post_uris: list[str]
     created_at: str
+
+    @field_validator('agent_handle')
+    @classmethod
+    def validate_agent_handle(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError('agent_handle cannot be empty')
+        return v
+    
+    @field_validator('run_id')
+    @classmethod
+    def validate_run_id(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError('run_id cannot be empty')
+        return v
 
     @classmethod
     def generate_feed_id(cls) -> str:

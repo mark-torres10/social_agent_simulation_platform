@@ -1,7 +1,5 @@
 """SQLite implementation of feed post database adapter."""
 
-from typing import Optional
-
 from db.adapters.base import FeedPostDatabaseAdapter
 from db.models import BlueskyFeedPost
 
@@ -41,16 +39,17 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
         from db.db import write_feed_posts
         write_feed_posts(posts)
     
-    def read_feed_post(self, uri: str) -> Optional[BlueskyFeedPost]:
+    def read_feed_post(self, uri: str) -> BlueskyFeedPost:
         """Read a feed post from SQLite.
         
         Args:
             uri: Post URI to look up
             
         Returns:
-            BlueskyFeedPost if found, None otherwise.
+            BlueskyFeedPost model if found.
         
         Raises:
+            ValueError: If uri is empty or if no feed post is found for the given URI
             ValueError: If the feed post data is invalid (NULL fields)
             sqlite3.OperationalError: If database operation fails
             KeyError: If required columns are missing from the database row
