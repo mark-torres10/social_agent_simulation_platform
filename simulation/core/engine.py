@@ -1,7 +1,7 @@
 from typing import Optional
 
 from ai.agents import SocialMediaAgent
-from db.models import Run, RunConfig, TurnResult
+from db.models import Run, RunConfig, RunStatus, TurnResult
 from db.repositories.run_repository import RunRepository
 from db.repositories.profile_repository import ProfileRepository
 from db.repositories.feed_post_repository import FeedPostRepository
