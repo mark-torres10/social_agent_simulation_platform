@@ -6,11 +6,13 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-from db.db import initialize_database, read_all_generated_bios, write_generated_bio_to_database
+from db.db import initialize_database
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from db.repositories.generated_bio_repository import create_sqlite_generated_bio_repository
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from db.models import BlueskyProfile, BlueskyFeedPost, GeneratedBio
 from lib.langfuse_telemetry import get_langfuse_client, log_llm_request
+from lib.utils import get_current_timestamp
 
 GENERATE_BIO_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """You are an expert at creating concise and accurate bios
@@ -123,6 +125,7 @@ def main():
     print("Reading profiles and feed posts from database...")
     profile_repo = create_sqlite_profile_repository()
     feed_post_repo = create_sqlite_feed_post_repository()
+    generated_bio_repo = create_sqlite_generated_bio_repository()
     profiles: list[BlueskyProfile] = profile_repo.list_profiles()
     feed_posts: list[BlueskyFeedPost] = feed_post_repo.list_all_feed_posts()
     posts_by_author: dict[str, list[BlueskyFeedPost]] = {}
@@ -133,13 +136,18 @@ def main():
     for i, profile in enumerate(profiles, 1):
         print(f"Generating bio for profile {i} of {len(profiles)}...")
         posts = posts_by_author[profile.handle]
-        generated_bio: str = generate_bio_for_profile(profile, posts)
-        write_generated_bio_to_database(profile.handle, generated_bio)
-        print(f"Generated bio for {profile.handle}: {generated_bio}")
+        generated_bio_text: str = generate_bio_for_profile(profile, posts)
+        generated_bio = GeneratedBio(
+            handle=profile.handle,
+            generated_bio=generated_bio_text,
+            created_at=get_current_timestamp(),
+        )
+        generated_bio_repo.create_or_update_generated_bio(generated_bio)
+        print(f"Generated bio for {profile.handle}: {generated_bio_text}")
 
     print("All bios generated and written to database.")
     print("Reading all generated bios from database...")
-    generated_bios: list[GeneratedBio] = read_all_generated_bios()
+    generated_bios: list[GeneratedBio] = generated_bio_repo.list_all_generated_bios()
     print(f"Found {len(generated_bios)} generated bios.")
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedFeed, Run
+from db.models import BlueskyFeedPost, BlueskyProfile, GeneratedBio, GeneratedFeed, Run
 
 
 class RunDatabaseAdapter(ABC):
@@ -312,3 +312,60 @@ class GeneratedFeedDatabaseAdapter(ABC):
         """
         raise NotImplementedError
 
+
+class GeneratedBioDatabaseAdapter(ABC):
+    """Abstract interface for generated bio database operations.
+    
+    This interface is database-agnostic. Currently works with GeneratedBio.
+    Concrete implementations should document the specific exceptions they raise,
+    which may be database-specific.
+    """
+    
+    @abstractmethod
+    def write_generated_bio(self, bio: GeneratedBio) -> None:
+        """Write a generated bio to the database.
+        
+        Args:
+            bio: GeneratedBio model to write
+            
+        Raises:
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_generated_bio(self, handle: str) -> Optional[GeneratedBio]:
+        """Read a generated bio by handle.
+        
+        Args:
+            handle: Profile handle to look up
+            
+        Returns:
+            GeneratedBio model if found, None otherwise.
+            
+        Raises:
+            ValueError: If the bio data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+    
+    @abstractmethod
+    def read_all_generated_bios(self) -> list[GeneratedBio]:
+        """Read all generated bios.
+        
+        Returns:
+            List of all GeneratedBio models. Returns empty list if no bios exist.
+            
+        Raises:
+            ValueError: If any bio data is invalid (NULL fields)
+            KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError

@@ -6,6 +6,7 @@ SQLite adapters. These functions are NOT part of the public API.
 External code should use the Repository/Adapter pattern instead:
 - ProfileRepository for profile operations
 - FeedPostRepository for feed post operations
+- GeneratedBioRepository for generated bio operations
 - GeneratedFeedRepository for generated feed operations
 - RunRepository for run operations
 
@@ -13,6 +14,7 @@ The functions in this module are implementation details and may change
 without notice. They are used internally by:
 - db.adapters.sqlite.profile_adapter
 - db.adapters.sqlite.feed_post_adapter
+- db.adapters.sqlite.generated_bio_adapter
 - db.adapters.sqlite.generated_feed_adapter
 - db.adapters.sqlite.run_adapter
 """
@@ -238,9 +240,16 @@ def write_feed_posts(posts: list[BlueskyFeedPost]) -> None:
 def write_generated_bio_to_database(handle: str, generated_bio: str) -> None:
     """Write a generated bio to the database.
     
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedBioAdapter.
+    External code should use GeneratedBioRepository.create_or_update_generated_bio() instead.
+    
     Args:
         handle: Handle of the profile
         generated_bio: Generated bio string
+        
+    Raises:
+        sqlite3.IntegrityError: If handle violates constraints
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         conn.execute("""
@@ -675,22 +684,100 @@ def read_all_feed_posts() -> list[BlueskyFeedPost]:
         return posts
 
 
+def _validate_generated_bio_row(row: sqlite3.Row, context: str | None = None) -> None:
+    """Validate that all required generated bio fields are not NULL.
+    
+    Args:
+        row: SQLite Row object containing generated bio data
+        context: Optional context string to include in error messages
+                 (e.g., "generated bio handle=user.bsky.social")
+    
+    Raises:
+        ValueError: If any required field is NULL. Error message includes
+                    the field name and optional context.
+    """
+    required_fields = [
+        "handle",
+        "generated_bio",
+        "created_at",
+    ]
+    
+    for field in required_fields:
+        if row[field] is None:
+            error_msg = f"{field} cannot be NULL"
+            if context:
+                error_msg = f"{error_msg} (context: {context})"
+            raise ValueError(error_msg)
+
+
+def read_generated_bio(handle: str) -> Optional[GeneratedBio]:
+    """Read a generated bio by handle.
+    
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedBioAdapter.
+    External code should use GeneratedBioRepository.get_generated_bio() instead.
+    
+    Args:
+        handle: Profile handle to look up
+        
+    Returns:
+        GeneratedBio if found, None otherwise
+        
+    Raises:
+        ValueError: If the bio data is invalid (NULL fields)
+        KeyError: If required columns are missing from the database row
+        sqlite3.OperationalError: If database operation fails
+    """
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM agent_bios WHERE handle = ?",
+            (handle,)
+        ).fetchone()
+        
+        if row is None:
+            return None
+        
+        # Validate required fields are not NULL
+        context = f"generated bio handle={handle}"
+        _validate_generated_bio_row(row, context=context)
+        
+        return GeneratedBio(
+            handle=row["handle"],
+            generated_bio=row["generated_bio"],
+            created_at=row["created_at"],
+        )
+
+
 def read_all_generated_bios() -> list[GeneratedBio]:
     """Read all generated bios from the database.
     
+    INTERNAL: This function is an implementation detail used by SQLiteGeneratedBioAdapter.
+    External code should use GeneratedBioRepository.list_all_generated_bios() instead.
+    
     Returns:
-        List of all GeneratedBio models
+        List of all GeneratedBio models. Returns empty list if no bios exist.
+        
+    Raises:
+        ValueError: If any bio data is invalid (NULL fields)
+        KeyError: If required columns are missing from any database row
+        sqlite3.OperationalError: If database operation fails
     """
     with get_connection() as conn:
         rows = conn.execute("SELECT * FROM agent_bios").fetchall()
-        return [
-            GeneratedBio(
+        
+        bios = []
+        for row in rows:
+            # Validate required fields are not NULL
+            handle_value = row["handle"] if row["handle"] is not None else "unknown"
+            context = f"generated bio handle={handle_value}"
+            _validate_generated_bio_row(row, context=context)
+            
+            bios.append(GeneratedBio(
                 handle=row["handle"],
                 generated_bio=row["generated_bio"],
                 created_at=row["created_at"],
-            )
-            for row in rows
-        ]
+            ))
+        
+        return bios
 
 
 def read_all_generated_feeds() -> list[GeneratedFeed]:
