@@ -48,7 +48,9 @@ class SimulationEngine:
         Returns:
             The run if found, None otherwise.
         """
-        raise NotImplementedError  # Stub for PR 1
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        return self.run_repo.get_run(run_id)
 
     def list_runs(self) -> list[Run]:
         """List all runs.
@@ -56,7 +58,7 @@ class SimulationEngine:
         Returns:
             A list of all runs.
         """
-        raise NotImplementedError  # Stub for PR 1
+        return self.run_repo.list_runs()
 
     def get_turn_data(self, run_id: str, turn_number: int) -> Optional[TurnResult]:
         """Get turn data for a specific run and turn number.
