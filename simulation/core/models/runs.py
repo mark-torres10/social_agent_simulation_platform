@@ -66,8 +66,6 @@ class Run(BaseModel):
     @classmethod
     def validate_total_turns(cls, v: int) -> int:
         """Validate that total_turns is an integer greater than zero."""
-        if not isinstance(v, int):
-            raise ValueError("total_turns must be an integer")
         if v <= 0:
             raise ValueError("total_turns must be greater than 0")
         return v
@@ -76,8 +74,6 @@ class Run(BaseModel):
     @classmethod
     def validate_total_agents(cls, v: int) -> int:
         """Validate that total_agents is an integer greater than zero."""
-        if not isinstance(v, int):
-            raise ValueError("total_agents must be an integer")
         if v <= 0:
             raise ValueError("total_agents must be greater than 0")
         return v

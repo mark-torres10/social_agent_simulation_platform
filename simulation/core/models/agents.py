@@ -18,13 +18,22 @@ class SocialMediaAgent:
         self.comments: list[GeneratedComment] = []
         self.follows: list[GeneratedFollow] = []
 
-    def get_feed(self) -> GeneratedFeed:
+    def get_feed(self, run_id: str, turn_number: int = 0) -> GeneratedFeed:
+        """Get a feed for this agent.
+        
+        Args:
+            run_id: The ID of the simulation run (required for validation)
+            turn_number: The turn number for this feed (default: 0)
+            
+        Returns:
+            A GeneratedFeed instance for this agent
+        """
         from lib.utils import get_current_timestamp
 
         return GeneratedFeed(
             feed_id=GeneratedFeed.generate_feed_id(),
-            run_id="",
-            turn_number=0,
+            run_id=run_id,
+            turn_number=turn_number,
             agent_handle=self.handle,
             post_uris=[],
             created_at=get_current_timestamp(),

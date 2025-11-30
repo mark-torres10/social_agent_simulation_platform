@@ -50,8 +50,6 @@ class BlueskyFeedPost(Post):
     @classmethod
     def validate_bookmark_count(cls, v: int) -> int:
         """Validate that bookmark_count is non-negative."""
-        if not isinstance(v, int):
-            raise ValueError("bookmark_count must be an integer")
         if v < 0:
             raise ValueError("bookmark_count must be >= 0")
         return v
@@ -60,8 +58,6 @@ class BlueskyFeedPost(Post):
     @classmethod
     def validate_quote_count(cls, v: int) -> int:
         """Validate that quote_count is non-negative."""
-        if not isinstance(v, int):
-            raise ValueError("quote_count must be an integer")
         if v < 0:
             raise ValueError("quote_count must be >= 0")
         return v
@@ -70,8 +66,6 @@ class BlueskyFeedPost(Post):
     @classmethod
     def validate_reply_count(cls, v: int) -> int:
         """Validate that reply_count is non-negative."""
-        if not isinstance(v, int):
-            raise ValueError("reply_count must be an integer")
         if v < 0:
             raise ValueError("reply_count must be >= 0")
         return v
@@ -80,8 +74,6 @@ class BlueskyFeedPost(Post):
     @classmethod
     def validate_repost_count(cls, v: int) -> int:
         """Validate that repost_count is non-negative."""
-        if not isinstance(v, int):
-            raise ValueError("repost_count must be an integer")
         if v < 0:
             raise ValueError("repost_count must be >= 0")
         return v

@@ -18,14 +18,18 @@ class GeneratedFeed(BaseModel):
     @field_validator("agent_handle")
     @classmethod
     def validate_agent_handle(cls, v: str) -> str:
-        if not v or not v.strip():
+        """Validate that agent_handle is a non-empty string."""
+        v = v.strip()
+        if not v:
             raise ValueError("agent_handle cannot be empty")
         return v
 
     @field_validator("run_id")
     @classmethod
     def validate_run_id(cls, v: str) -> str:
-        if not v or not v.strip():
+        """Validate that run_id is a non-empty string."""
+        v = v.strip()
+        if not v:
             raise ValueError("run_id cannot be empty")
         return v
 
@@ -41,8 +45,6 @@ class GeneratedFeed(BaseModel):
     @classmethod
     def validate_turn_number(cls, v: int) -> int:
         """Validate that turn_number is a non-negative integer."""
-        if not isinstance(v, int):
-            raise ValueError("turn_number must be an integer")
         if v < 0:
             raise ValueError("turn_number must be >= 0")
         return v
