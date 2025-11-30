@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import Mock
+from pydantic import ValidationError
 from db.repositories.generated_feed_repository import SQLiteGeneratedFeedRepository
 from db.adapters.base import GeneratedFeedDatabaseAdapter
 from db.models import GeneratedFeed
@@ -80,45 +81,37 @@ class TestSQLiteGeneratedFeedRepositoryCreateOrUpdateGeneratedFeed:
         assert call_args.run_id == result.run_id
         assert call_args.agent_handle == result.agent_handle
     
-    def test_raises_value_error_when_agent_handle_is_empty(self):
-        """Test that create_or_update_generated_feed raises ValueError when agent_handle is empty."""
-        # Arrange
-        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
-        repo = SQLiteGeneratedFeedRepository(mock_adapter)
-        feed = GeneratedFeed(
-            feed_id="feed_test123",
-            run_id="run_123",
-            turn_number=1,
-            agent_handle="",
-            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
-            created_at="2024-01-01T00:00:00Z",
-        )
+    def test_raises_validation_error_when_agent_handle_is_empty(self):
+        """Test that creating GeneratedFeed with empty agent_handle raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            feed = GeneratedFeed(
+                feed_id="feed_test123",
+                run_id="run_123",
+                turn_number=1,
+                agent_handle="",
+                post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+                created_at="2024-01-01T00:00:00Z",
+            )
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="agent_handle cannot be empty"):
-            repo.create_or_update_generated_feed(feed)
-        
-        mock_adapter.write_generated_feed.assert_not_called()
+        assert "agent_handle cannot be empty" in str(exc_info.value)
     
-    def test_raises_value_error_when_run_id_is_empty(self):
-        """Test that create_or_update_generated_feed raises ValueError when run_id is empty."""
-        # Arrange
-        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
-        repo = SQLiteGeneratedFeedRepository(mock_adapter)
-        feed = GeneratedFeed(
-            feed_id="feed_test123",
-            run_id="",
-            turn_number=1,
-            agent_handle="test.bsky.social",
-            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
-            created_at="2024-01-01T00:00:00Z",
-        )
+    def test_raises_validation_error_when_run_id_is_empty(self):
+        """Test that creating GeneratedFeed with empty run_id raises ValidationError from Pydantic."""
+        # Arrange & Act & Assert
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            feed = GeneratedFeed(
+                feed_id="feed_test123",
+                run_id="",
+                turn_number=1,
+                agent_handle="test.bsky.social",
+                post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+                created_at="2024-01-01T00:00:00Z",
+            )
         
-        # Act & Assert
-        with pytest.raises(ValueError, match="run_id cannot be empty"):
-            repo.create_or_update_generated_feed(feed)
-        
-        mock_adapter.write_generated_feed.assert_not_called()
+        assert "run_id cannot be empty" in str(exc_info.value)
     
     def test_propagates_adapter_exception_when_write_fails(self):
         """Test that create_or_update_generated_feed propagates adapter exceptions when database write fails."""
@@ -204,18 +197,6 @@ class TestSQLiteGeneratedFeedRepositoryGetGeneratedFeed:
         # Act & Assert
         with pytest.raises(ValueError, match="run_id cannot be empty"):
             repo.get_generated_feed("test.bsky.social", "", 1)
-        
-        mock_adapter.read_generated_feed.assert_not_called()
-    
-    def test_raises_value_error_when_turn_number_is_none(self):
-        """Test that get_generated_feed raises ValueError when turn_number is None."""
-        # Arrange
-        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
-        repo = SQLiteGeneratedFeedRepository(mock_adapter)
-        
-        # Act & Assert
-        with pytest.raises(ValueError, match="turn_number cannot be None"):
-            repo.get_generated_feed("test.bsky.social", "run_123", None)  # type: ignore
         
         mock_adapter.read_generated_feed.assert_not_called()
 

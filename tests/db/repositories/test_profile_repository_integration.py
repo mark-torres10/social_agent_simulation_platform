@@ -6,6 +6,7 @@ These tests use a real SQLite database to test end-to-end functionality.
 import pytest
 import tempfile
 import os
+from pydantic import ValidationError
 
 from db.repositories.profile_repository import create_sqlite_profile_repository
 from db.models import BlueskyProfile
@@ -175,20 +176,22 @@ class TestSQLiteProfileRepositoryIntegration:
         assert profile_dict["user3.bsky.social"].posts_count == 75
     
     def test_create_or_update_profile_with_empty_handle_raises_error(self, temp_db):
-        """Test that create_or_update_profile raises ValueError when handle is empty."""
+        """Test that creating BlueskyProfile with empty handle raises ValidationError from Pydantic."""
         repo = create_sqlite_profile_repository()
-        profile = BlueskyProfile(
-            handle="",
-            did="did:plc:test123",
-            display_name="Test User",
-            bio="Test bio",
-            followers_count=100,
-            follows_count=50,
-            posts_count=25,
-        )
         
-        with pytest.raises(ValueError, match="handle cannot be empty"):
-            repo.create_or_update_profile(profile)
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            profile = BlueskyProfile(
+                handle="",
+                did="did:plc:test123",
+                display_name="Test User",
+                bio="Test bio",
+                followers_count=100,
+                follows_count=50,
+                posts_count=25,
+            )
+        
+        assert "handle cannot be empty" in str(exc_info.value)
     
     def test_get_profile_with_empty_handle_raises_error(self, temp_db):
         """Test that get_profile raises ValueError when handle is empty."""

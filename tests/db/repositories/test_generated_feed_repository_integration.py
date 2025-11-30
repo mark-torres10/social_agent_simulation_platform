@@ -6,6 +6,7 @@ These tests use a real SQLite database to test end-to-end functionality.
 import pytest
 import tempfile
 import os
+from pydantic import ValidationError
 
 from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
 from db.models import GeneratedFeed
@@ -202,19 +203,21 @@ class TestSQLiteGeneratedFeedRepositoryIntegration:
         assert retrieved3.turn_number == 1
     
     def test_create_or_update_generated_feed_with_empty_agent_handle_raises_error(self, temp_db):
-        """Test that create_or_update_generated_feed raises ValueError when agent_handle is empty."""
+        """Test that creating GeneratedFeed with empty agent_handle raises ValidationError from Pydantic."""
         repo = create_sqlite_generated_feed_repository()
-        feed = GeneratedFeed(
-            feed_id="feed_test123",
-            run_id="run_123",
-            turn_number=1,
-            agent_handle="",
-            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
-            created_at="2024-01-01T00:00:00Z",
-        )
         
-        with pytest.raises(ValueError, match="agent_handle cannot be empty"):
-            repo.create_or_update_generated_feed(feed)
+        # Pydantic validation happens at model creation time, not in repository
+        with pytest.raises(ValidationError) as exc_info:
+            feed = GeneratedFeed(
+                feed_id="feed_test123",
+                run_id="run_123",
+                turn_number=1,
+                agent_handle="",
+                post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+                created_at="2024-01-01T00:00:00Z",
+            )
+        
+        assert "agent_handle cannot be empty" in str(exc_info.value)
     
     def test_get_generated_feed_with_empty_agent_handle_raises_error(self, temp_db):
         """Test that get_generated_feed raises ValueError when agent_handle is empty."""

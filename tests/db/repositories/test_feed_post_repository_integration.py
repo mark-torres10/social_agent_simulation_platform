@@ -150,12 +150,12 @@ class TestSQLiteFeedPostRepositoryIntegration:
         assert retrieved_post.reply_count == 25
         assert retrieved_post.repost_count == 15
     
-    def test_get_feed_post_returns_none_for_nonexistent_uri(self, temp_db):
-        """Test that get_feed_post returns None for a non-existent URI."""
+    def test_get_feed_post_raises_value_error_for_nonexistent_uri(self, temp_db):
+        """Test that get_feed_post raises ValueError for a non-existent URI."""
         repo = create_sqlite_feed_post_repository()
         
-        result = repo.get_feed_post("at://did:plc:nonexistent/app.bsky.feed.post/test")
-        assert result is None
+        with pytest.raises(ValueError, match="No feed post found for uri"):
+            repo.get_feed_post("at://did:plc:nonexistent/app.bsky.feed.post/test")
     
     def test_list_feed_posts_by_author_retrieves_correct_posts(self, temp_db):
         """Test that list_feed_posts_by_author filters correctly by author."""
@@ -276,23 +276,26 @@ class TestSQLiteFeedPostRepositoryIntegration:
         assert isinstance(posts, list)
     
     def test_create_or_update_feed_post_with_empty_uri_raises_error(self, temp_db):
-        """Test that create_or_update_feed_post raises ValueError when uri is empty."""
+        """Test that creating BlueskyFeedPost with empty uri raises ValidationError from Pydantic."""
         repo = create_sqlite_feed_post_repository()
-        post = BlueskyFeedPost(
-            uri="",
-            author_display_name="Test User",
-            author_handle="test.bsky.social",
-            text="Test post content",
-            bookmark_count=5,
-            like_count=10,
-            quote_count=2,
-            reply_count=3,
-            repost_count=1,
-            created_at="2024-01-01T00:00:00Z",
-        )
         
-        with pytest.raises(ValueError, match="uri cannot be empty"):
-            repo.create_or_update_feed_post(post)
+        # Pydantic validation happens at model creation time, not in repository
+        from pydantic import ValidationError
+        with pytest.raises(ValidationError) as exc_info:
+            post = BlueskyFeedPost(
+                uri="",
+                author_display_name="Test User",
+                author_handle="test.bsky.social",
+                text="Test post content",
+                bookmark_count=5,
+                like_count=10,
+                quote_count=2,
+                reply_count=3,
+                repost_count=1,
+                created_at="2024-01-01T00:00:00Z",
+            )
+        
+        assert "uri cannot be empty" in str(exc_info.value)
     
     def test_get_feed_post_with_empty_uri_raises_error(self, temp_db):
         """Test that get_feed_post raises ValueError when uri is empty."""
