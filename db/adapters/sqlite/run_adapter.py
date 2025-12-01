@@ -103,7 +103,7 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                 return None
 
             # Check required columns
-            required_cols = ["turn_number", "total_actions"]
+            required_cols = ["run_id", "turn_number", "total_actions"]
             for col in required_cols:
                 if col not in row.keys():
                     raise KeyError(
@@ -111,9 +111,9 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                     )
 
             # Check for NULL fields
-            if row["turn_number"] is None or row["total_actions"] is None:
+            if row["run_id"] is None or row["turn_number"] is None or row["total_actions"] is None:
                 raise ValueError(
-                    f"Turn metadata has NULL fields: run_id={run_id}, turn_number={turn_number}"
+                    f"Turn metadata has NULL fields: run_id={row['run_id']}, turn_number={row['turn_number']}"
                 )
 
             try:
@@ -137,7 +137,28 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
 
             try:
                 return TurnMetadata(
-                    turn_number=row["turn_number"], total_actions=total_actions
+                    run_id=row["run_id"],
+                    turn_number=row["turn_number"],
+                    total_actions=total_actions,
+                    created_at=row["created_at"],
                 )
             except Exception as e:
-                raise ValueError(f"Invalid turn metadata data: {e}")
+                raise ValueError(f"Invalid turn metadata data: {e}. "
+                                 f"run_id={row['run_id']}, turn_number={row['turn_number']}, total_actions={total_actions}, created_at={row['created_at']}")
+
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to SQLite.
+
+        Writes to the `turn_metadata` table. Uses INSERT.
+
+        Raises:
+            sqlite3.IntegrityError: If turn_number violates constraints
+            sqlite3.OperationalError: If database operation fails
+            DuplicateTurnMetadataError: If turn metadata already exists
+        """
+        from db.db import get_connection
+
+        existing_turn_metadata = self.read_turn_metadata(turn_metadata.run_id, turn_metadata.turn_number)
+        # check if turn metadata already exists
+
+        write_turn_metadata(turn_metadata)
