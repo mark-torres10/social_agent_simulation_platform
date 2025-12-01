@@ -206,6 +206,72 @@ class TestSQLiteFeedPostAdapterReadFeedPostsByUris:
             assert result[0].uri == "uri1"
             assert result[1].uri == "uri2"
 
+    def test_preserves_input_order_when_database_returns_different_order(
+        self, adapter, mock_db_connection
+    ):
+        """Test that read_feed_posts_by_uris preserves input URI order even if DB returns different order."""
+        # Arrange
+        # Input order: uri3, uri1, uri2
+        uris = ["uri3", "uri1", "uri2"]
+
+        row_data_1 = {
+            "uri": "uri1",
+            "author_display_name": "Author 1",
+            "author_handle": "author1.bsky.social",
+            "text": "Post 1 text",
+            "bookmark_count": 0,
+            "like_count": 5,
+            "quote_count": 0,
+            "reply_count": 2,
+            "repost_count": 1,
+            "created_at": "2024_01_01-12:00:00",
+        }
+        row_data_2 = {
+            "uri": "uri2",
+            "author_display_name": "Author 2",
+            "author_handle": "author2.bsky.social",
+            "text": "Post 2 text",
+            "bookmark_count": 0,
+            "like_count": 10,
+            "quote_count": 0,
+            "reply_count": 3,
+            "repost_count": 2,
+            "created_at": "2024_01_01-12:01:00",
+        }
+        row_data_3 = {
+            "uri": "uri3",
+            "author_display_name": "Author 3",
+            "author_handle": "author3.bsky.social",
+            "text": "Post 3 text",
+            "bookmark_count": 0,
+            "like_count": 0,
+            "quote_count": 0,
+            "reply_count": 0,
+            "repost_count": 0,
+            "created_at": "2024_01_01-12:02:00",
+        }
+        mock_row_1 = create_mock_row(row_data_1)
+        mock_row_2 = create_mock_row(row_data_2)
+        mock_row_3 = create_mock_row(row_data_3)
+
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            # Database returns in different order: uri1, uri2, uri3
+            mock_cursor.fetchall = Mock(
+                return_value=[mock_row_1, mock_row_2, mock_row_3]
+            )
+
+            # Act
+            result = adapter.read_feed_posts_by_uris(uris)
+
+            # Assert
+            assert result is not None
+            assert isinstance(result, list)
+            assert len(result) == 3
+            # Results should be in input order: uri3, uri1, uri2
+            assert result[0].uri == "uri3"
+            assert result[1].uri == "uri1"
+            assert result[2].uri == "uri2"
+
     def test_raises_operational_error_on_database_error(
         self, adapter, mock_db_connection
     ):
