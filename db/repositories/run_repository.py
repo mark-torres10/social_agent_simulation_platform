@@ -236,31 +236,29 @@ class SQLiteRunRepository(RunRepository):
             turn_metadata: TurnMetadata model to write
 
         Raises:
-            ValueError: If turn_metadata is invalid
+            RunNotFoundError: If the run with the given run_id does not exist
+            ValueError: If turn_number is out of bounds for the run
             DuplicateTurnMetadataError: If turn metadata already exists
             Exception: Database-specific exception if constraints are violated or
                       the operation fails. Implementations should document the
                       specific exception types they raise.
 
-        Adds validation for the following:
-        - run_id is not empty
-        - turn_number is non-negative
-        - run exists in the database
-        - turn_number is less than the total number of turns in the run
+        Note:
+            TurnMetadata Pydantic model already validates that run_id is non-empty
+            and turn_number is non-negative. This method validates:
+            - Run exists in the database
+            - turn_number is within bounds (0 to run.total_turns - 1)
 
-        NOTE: our implementation assumes a setup where we first write a record
-        for the run itself, and then we write the subsequent turn records. No
-        run = no records.
+            Our implementation assumes a setup where we first write a record
+            for the run itself, and then we write the subsequent turn records.
+            No run = no records.
         """
-        if not turn_metadata.run_id or not turn_metadata.run_id.strip():
-            raise ValueError("run_id cannot be empty")
-        if turn_metadata.turn_number < 0:
-            raise ValueError("turn_number cannot be negative")
-
+        # Validate run exists
         run = self.get_run(turn_metadata.run_id)
         if run is None:
             raise RunNotFoundError(turn_metadata.run_id)
 
+        # Validate turn_number is within bounds
         if turn_metadata.turn_number >= run.total_turns:
             raise ValueError(
                 f"turn_number {turn_metadata.turn_number} is out of bounds. "
