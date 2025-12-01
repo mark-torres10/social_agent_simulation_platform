@@ -265,6 +265,29 @@ class FeedPostDatabaseAdapter(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+        """Read feed posts by URIs.
+        
+        Args:
+            uris: List of post URIs to look up
+            
+        Returns:
+            List of BlueskyFeedPost models for the given URIs.
+
+        Raises:
+            ValueError: If any feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        Note:
+            This method is used to hydrate generated feeds. Implementations should
+            ensure that the post URIs are valid and that the feed posts are returned
+            in the same order as the URIs.
+        """
+        raise NotImplementedError
+
 
 class GeneratedFeedDatabaseAdapter(ABC):
     """Abstract interface for generated feed database operations.
@@ -348,6 +371,27 @@ class GeneratedFeedDatabaseAdapter(ABC):
         """
         raise NotImplementedError
 
+
+    @abstractmethod
+    def read_feeds_for_turn(self, run_id: str, turn_number: int) -> list[GeneratedFeed]:
+        """Read all generated feeds for a specific run and turn.
+        
+        Args:
+            run_id: The ID of the run
+            turn_number: The turn number (0-indexed)
+
+        Returns:
+            List of GeneratedFeed models for the specified run and turn.
+            Returns empty list if no feeds found.
+
+        Raises:
+            ValueError: If the feed data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
 
 class GeneratedBioDatabaseAdapter(ABC):
     """Abstract interface for generated bio database operations.
