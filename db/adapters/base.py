@@ -8,6 +8,7 @@ from simulation.core.models.generated.bio import GeneratedBio
 from simulation.core.models.posts import BlueskyFeedPost
 from simulation.core.models.profiles import BlueskyProfile
 from simulation.core.models.runs import Run
+from simulation.core.models.turns import TurnMetadata
 
 
 class RunDatabaseAdapter(ABC):
@@ -88,15 +89,29 @@ class RunDatabaseAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read_turn_metadata(self, run_id: str, turn_number: int) -> Optional[TurnMetadata]:
+    def read_turn_metadata(
+        self, run_id: str, turn_number: int
+    ) -> Optional[TurnMetadata]:
         """Read turn metadata for a specific run and turn.
 
+        Args:
+            run_id: The ID of the run
+            turn_number: The turn number (0-indexed)
+
+        Returns:
+            TurnMetadata if found, None otherwise
+
         Raises:
-            ValueError: If the turn metadata data is invalid (NULL fields, invalid status)
+            ValueError: If the turn metadata data is invalid (NULL fields, invalid action types)
             KeyError: If required columns are missing from the database row
             Exception: Database-specific exception if the operation fails.
                       Implementations should document the specific exception types
                       they raise.
+
+        Note:
+            The total_actions field is stored in the database as JSON with string keys
+            (e.g., {"like": 5, "comment": 2}). Implementations should convert these
+            string keys to TurnAction enum keys when constructing the TurnMetadata object.
         """
         raise NotImplementedError
 

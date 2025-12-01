@@ -5,6 +5,7 @@ import sqlite3
 from typing import Optional
 
 from db.adapters.base import RunDatabaseAdapter
+from simulation.core.models.actions import TurnAction
 from simulation.core.models.runs import Run
 from simulation.core.models.turns import TurnMetadata
 
@@ -67,11 +68,23 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
 
         update_run_status(run_id, status, completed_at)
 
-    def read_turn_metadata(self, run_id: str, turn_number: int) -> Optional[TurnMetadata]:
+    def read_turn_metadata(
+        self, run_id: str, turn_number: int
+    ) -> Optional[TurnMetadata]:
         """Read turn metadata from SQLite.
 
+        The total_actions field is stored as JSON with string keys (e.g., {"like": 5}).
+        This method converts those string keys to TurnAction enum keys.
+
+        Args:
+            run_id: The ID of the run
+            turn_number: The turn number (0-indexed)
+
+        Returns:
+            TurnMetadata if found, None otherwise
+
         Raises:
-            ValueError: If the turn metadata data is invalid (NULL fields, invalid status)
+            ValueError: If the turn metadata data is invalid (NULL fields, invalid action types)
             sqlite3.OperationalError: If database operation fails
             KeyError: If required columns are missing from the database row
         """
@@ -93,21 +106,38 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
             required_cols = ["turn_number", "total_actions"]
             for col in required_cols:
                 if col not in row.keys():
-                    raise KeyError(f"Missing required column '{col}' in turn_metadata row")
+                    raise KeyError(
+                        f"Missing required column '{col}' in turn_metadata row"
+                    )
 
             # Check for NULL fields
             if row["turn_number"] is None or row["total_actions"] is None:
-                raise ValueError(f"Turn metadata has NULL fields: run_id={run_id}, turn_number={turn_number}")
+                raise ValueError(
+                    f"Turn metadata has NULL fields: run_id={run_id}, turn_number={turn_number}"
+                )
 
             try:
-                total_actions = json.loads(row["total_actions"])
-            except Exception as e:
-                raise ValueError(f"Could not parse total_actions as JSON for turn_metadata: {e}")
+                total_actions_dict = json.loads(row["total_actions"])
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"Could not parse total_actions as JSON for turn_metadata: {e}"
+                )
+
+            # Convert string keys to TurnAction enum keys
+            try:
+                total_actions = {
+                    TurnAction(k): v for k, v in total_actions_dict.items()
+                }
+            except (ValueError, KeyError) as e:
+                valid_keys = [action.value for action in TurnAction]
+                raise ValueError(
+                    f"Invalid action type in total_actions for turn_metadata: {e}. "
+                    f"Expected keys: {valid_keys}, got: {list(total_actions_dict.keys())}"
+                )
 
             try:
                 return TurnMetadata(
-                    turn_number=row["turn_number"],
-                    total_actions=total_actions
+                    turn_number=row["turn_number"], total_actions=total_actions
                 )
             except Exception as e:
                 raise ValueError(f"Invalid turn metadata data: {e}")
