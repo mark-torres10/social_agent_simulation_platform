@@ -13,11 +13,11 @@ from simulation.core.models.turns import TurnData, TurnMetadata, TurnResult
 
 class SimulationEngine:
     """Orchestrates simulation execution and provides query methods for UI/API.
-    
+
     This class serves two purposes:
     1. **Execution**: Runs simulations via `execute_run()` and related methods
     2. **Query**: Provides read-only methods (`get_*`, `list_*`) for UI/API consumption
-    
+
     Query methods (e.g., `get_turn_data()`, `get_turn_metadata()`) are not used
     during simulation execution but are consumed by the FastAPI backend layer.
 
@@ -25,6 +25,7 @@ class SimulationEngine:
     because the implementation is simple and premature abstraction right now
     leads to a lot of duplication of code.
     """
+
     def __init__(
         self,
         run_repo: RunRepository,
