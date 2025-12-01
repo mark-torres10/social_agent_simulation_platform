@@ -39,8 +39,18 @@ class TurnMetadata(BaseModel):
     Contains basic information about a turn without the full data.
     """
 
+    run_id: str
     turn_number: int
     total_actions: dict[TurnAction, int]
+    created_at: str
+
+    @field_validator("run_id")
+    @classmethod
+    def validate_run_id(cls, v: str) -> str:
+        """Validate that run_id is a non-empty string."""
+        if not v or not v.strip():
+            raise ValueError("run_id cannot be empty")
+        return v.strip()
 
     @field_validator("turn_number")
     @classmethod
