@@ -373,9 +373,8 @@ class TestSQLiteRunAdapterWriteTurnMetadata:
             params = call_args[0][1]
             assert params[0] == run_id
             assert params[1] == turn_number
-            assert params[2] == json.dumps(
-                {"like": 5, "comment": 2, "follow": 1}
-            )  # Enum values as strings
+            # Parse JSON and compare dict to avoid key ordering issues
+            assert json.loads(params[2]) == {"like": 5, "comment": 2, "follow": 1}
             assert params[3] == "2024_01_01-12:00:00"
             # Verify commit was called
             mock_conn.commit.assert_called_once()
@@ -472,10 +471,7 @@ class TestSQLiteRunAdapterWriteTurnMetadata:
             call_args = mock_conn.execute.call_args
             params = call_args[0][1]
             total_actions_json = params[2]
-            # Verify JSON serialization uses enum values as strings
-            expected_json = json.dumps({"like": 10, "comment": 5, "follow": 3})
-            assert total_actions_json == expected_json
-            # Verify it's valid JSON
+            # Verify JSON serialization uses enum values as strings (parse and compare dict for order-independence)
             parsed = json.loads(total_actions_json)
             assert parsed == {"like": 10, "comment": 5, "follow": 3}
 
