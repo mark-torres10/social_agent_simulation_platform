@@ -88,7 +88,7 @@ class SimulationEngine:
         """
         if not run_id or not run_id.strip():
             raise ValueError("run_id cannot be empty")
-        if turn_number < 0:
+        if turn_number is None or turn_number < 0:
             raise ValueError("turn_number cannot be negative")
         return self.run_repo.get_turn_metadata(run_id, turn_number)
 
@@ -114,7 +114,7 @@ class SimulationEngine:
         """
         if not run_id or not run_id.strip():
             raise ValueError("run_id cannot be empty")
-        if turn_number < 0:
+        if turn_number is None or turn_number < 0:
             raise ValueError("turn_number cannot be negative")
 
         # Check run exists

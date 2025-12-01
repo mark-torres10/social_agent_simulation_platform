@@ -388,6 +388,26 @@ class TestSimulationEngineGetTurnData:
         mock_repos["run_repo"].get_run.assert_not_called()
         mock_repos["generated_feed_repo"].read_feeds_for_turn.assert_not_called()
 
+    def test_raises_value_error_for_none_run_id(self, engine, mock_repos):
+        """Test that get_turn_data raises ValueError for None run_id."""
+        # Arrange & Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            engine.get_turn_data(None, 0)  # type: ignore
+
+        # Verify repositories were not called
+        mock_repos["run_repo"].get_run.assert_not_called()
+        mock_repos["generated_feed_repo"].read_feeds_for_turn.assert_not_called()
+
+    def test_raises_value_error_for_none_turn_number(self, engine, mock_repos):
+        """Test that get_turn_data raises ValueError for None turn_number."""
+        # Arrange & Act & Assert
+        with pytest.raises(ValueError):
+            engine.get_turn_data("run_123", None)  # type: ignore
+
+        # Verify repositories were not called
+        mock_repos["run_repo"].get_run.assert_not_called()
+        mock_repos["generated_feed_repo"].read_feeds_for_turn.assert_not_called()
+
     def test_raises_run_not_found_error_when_run_does_not_exist(
         self, engine, mock_repos
     ):
@@ -424,7 +444,7 @@ class TestSimulationEngineGetTurnData:
                 "uri1",
                 "uri2",
                 "missing_uri",
-            ],  # uri2 and missing_uri don't exist
+            ],  # uri2 and missing_uri have no corresponding post objects in the repository (only uri1 does)
             created_at="2024_01_01-12:00:00",
         )
 
