@@ -1,3 +1,5 @@
+from typing import Callable
+
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.generated_feed_repository import (
     create_sqlite_generated_feed_repository,
@@ -10,6 +12,11 @@ from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.posts import BlueskyFeedPost
 
 
+_FEED_ALGORITHMS: dict[str, Callable] = {
+    "chronological": generate_chronological_feed,
+    # "rag": generate_rag_feed,  # TODO: Add in future PR
+}
+
 def generate_feed(
     agent: SocialMediaAgent,
     candidate_posts: list[BlueskyFeedPost],
@@ -18,21 +25,18 @@ def generate_feed(
     feed_type: str,
 ) -> GeneratedFeed:
     """Generate a feed for an agent."""
-    if feed_type == "chronological":
-        feed_dict = generate_chronological_feed(
-            candidate_posts=candidate_posts, agent=agent
-        )
-        feed = GeneratedFeed(
-            feed_id=feed_dict["feed_id"],
-            run_id=run_id,
-            turn_number=turn_number,
-            agent_handle=feed_dict["agent_handle"],
-            post_uris=feed_dict["post_uris"],
-            created_at=get_current_timestamp(),
-        )
-        return feed
-    else:
-        raise NotImplementedError(f"Feed type {feed_type} not implemented")
+    if feed_type not in _FEED_ALGORITHMS:
+        raise ValueError(f"Unknown feed type: {feed_type}")
+    algorithm = _FEED_ALGORITHMS[feed_type]
+    feed_dict = algorithm(candidate_posts=candidate_posts, agent=agent)
+    return GeneratedFeed(
+        feed_id=feed_dict["feed_id"],
+        run_id=run_id,
+        turn_number=turn_number,
+        agent_handle=feed_dict["agent_handle"],
+        post_uris=feed_dict["post_uris"],
+        created_at=get_current_timestamp(),
+    )
 
 
 def generate_feeds(
