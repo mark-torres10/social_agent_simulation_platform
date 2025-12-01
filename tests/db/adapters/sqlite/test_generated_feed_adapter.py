@@ -52,7 +52,9 @@ def mock_db_connection():
     def _mock_db_connection():
         # Patch where it's used, not where it's defined
         # This is necessary because get_connection is imported at module level
-        with patch("db.adapters.sqlite.generated_feed_adapter.get_connection") as mock_get_conn:
+        with patch(
+            "db.adapters.sqlite.generated_feed_adapter.get_connection"
+        ) as mock_get_conn:
             mock_conn = MagicMock()
             mock_cursor = MagicMock()
             mock_conn.__enter__ = Mock(return_value=mock_conn)
@@ -248,6 +250,8 @@ class TestSQLiteGeneratedFeedAdapterReadFeedsForTurn:
             # Assert
             mock_conn.execute.assert_called_once()
             call_args = mock_conn.execute.call_args
-            assert call_args[0][0] == "SELECT * FROM generated_feeds WHERE run_id = ? AND turn_number = ?"
+            assert (
+                call_args[0][0]
+                == "SELECT * FROM generated_feeds WHERE run_id = ? AND turn_number = ?"
+            )
             assert call_args[0][1] == (run_id, turn_number)
-

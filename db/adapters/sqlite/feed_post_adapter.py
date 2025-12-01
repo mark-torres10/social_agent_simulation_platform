@@ -104,7 +104,7 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
             List of BlueskyFeedPost models for the given URIs.
             Returns empty list if no URIs provided or if no posts found.
             Missing URIs are silently skipped (only existing posts are returned).
-        
+
         Raises:
             ValueError: If the feed post data is invalid (NULL fields)
             KeyError: If required columns are missing from the database row
@@ -145,5 +145,5 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
                         created_at=row["created_at"],
                     )
                 )
-            
+
             return posts

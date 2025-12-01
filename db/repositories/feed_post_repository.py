@@ -74,7 +74,7 @@ class FeedPostRepository(ABC):
     @abstractmethod
     def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
         """Read feed posts by URIs.
-        
+
         Args:
             uris: List of post URIs to look up
 
@@ -214,6 +214,7 @@ class SQLiteFeedPostRepository(FeedPostRepository):
         if not uris:
             return []
         return self._db_adapter.read_feed_posts_by_uris(uris)
+
 
 def create_sqlite_feed_post_repository() -> SQLiteFeedPostRepository:
     """Factory function to create a SQLiteFeedPostRepository with default dependencies.

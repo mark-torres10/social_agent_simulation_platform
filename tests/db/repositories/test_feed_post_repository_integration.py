@@ -402,7 +402,9 @@ class TestSQLiteFeedPostRepositoryIntegration:
         assert posts == []
         assert isinstance(posts, list)
 
-    def test_read_feed_posts_by_uris_returns_empty_list_when_no_posts_found(self, temp_db):
+    def test_read_feed_posts_by_uris_returns_empty_list_when_no_posts_found(
+        self, temp_db
+    ):
         """Test that read_feed_posts_by_uris returns empty list when no posts exist for URIs."""
         repo = create_sqlite_feed_post_repository()
 
@@ -414,7 +416,9 @@ class TestSQLiteFeedPostRepositoryIntegration:
         assert posts == []
         assert isinstance(posts, list)
 
-    def test_read_feed_posts_by_uris_returns_partial_results_when_some_missing(self, temp_db):
+    def test_read_feed_posts_by_uris_returns_partial_results_when_some_missing(
+        self, temp_db
+    ):
         """Test that read_feed_posts_by_uris returns partial results when some URIs don't exist."""
         repo = create_sqlite_feed_post_repository()
 

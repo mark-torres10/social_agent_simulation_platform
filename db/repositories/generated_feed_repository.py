@@ -79,6 +79,7 @@ class GeneratedFeedRepository(ABC):
         """
         raise NotImplementedError
 
+
 class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
     """SQLite implementation of GeneratedFeedRepository.
 
@@ -177,7 +178,6 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
 
         return self._db_adapter.read_post_uris_for_run(agent_handle, run_id)
 
-
     def read_feeds_for_turn(self, run_id: str, turn_number: int) -> list[GeneratedFeed]:
         """Read all generated feeds for a specific run and turn.
 
@@ -197,6 +197,7 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
                       they raise.
         """
         return self._db_adapter.read_feeds_for_turn(run_id, turn_number)
+
 
 def create_sqlite_generated_feed_repository() -> SQLiteGeneratedFeedRepository:
     """Factory function to create a SQLiteGeneratedFeedRepository with default dependencies.

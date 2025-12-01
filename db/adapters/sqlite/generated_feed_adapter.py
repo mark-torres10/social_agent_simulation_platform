@@ -97,7 +97,7 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
         Returns:
             List of GeneratedFeed models for the specified run and turn.
             Returns empty list if no feeds found.
-        
+
         Raises:
             ValueError: If the feed data is invalid (NULL fields, invalid JSON)
             KeyError: If required columns are missing from the database row
@@ -119,12 +119,14 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
 
             feeds = []
             for row in rows:
-                feeds.append(GeneratedFeed(
-                    feed_id=row["feed_id"],
-                    run_id=row["run_id"],
-                    turn_number=row["turn_number"],
-                    agent_handle=row["agent_handle"],
-                    post_uris=json.loads(row["post_uris"]),
-                    created_at=row["created_at"],
-                ))
+                feeds.append(
+                    GeneratedFeed(
+                        feed_id=row["feed_id"],
+                        run_id=row["run_id"],
+                        turn_number=row["turn_number"],
+                        agent_handle=row["agent_handle"],
+                        post_uris=json.loads(row["post_uris"]),
+                        created_at=row["created_at"],
+                    )
+                )
             return feeds

@@ -45,7 +45,9 @@ def mock_db_connection():
     def _mock_db_connection():
         # Patch where it's used, not where it's defined
         # This is necessary because get_connection is imported at module level
-        with patch("db.adapters.sqlite.feed_post_adapter.get_connection") as mock_get_conn:
+        with patch(
+            "db.adapters.sqlite.feed_post_adapter.get_connection"
+        ) as mock_get_conn:
             mock_conn = MagicMock()
             mock_cursor = MagicMock()
             mock_conn.__enter__ = Mock(return_value=mock_conn)
@@ -60,9 +62,7 @@ def mock_db_connection():
 class TestSQLiteFeedPostAdapterReadFeedPostsByUris:
     """Tests for SQLiteFeedPostAdapter.read_feed_posts_by_uris method."""
 
-    def test_returns_posts_when_found(
-        self, adapter, mock_db_connection
-    ):
+    def test_returns_posts_when_found(self, adapter, mock_db_connection):
         """Test that read_feed_posts_by_uris returns list of posts when they exist."""
         # Arrange
         uris = ["uri1", "uri2", "uri3"]
@@ -108,7 +108,9 @@ class TestSQLiteFeedPostAdapterReadFeedPostsByUris:
         mock_row_3 = create_mock_row(row_data_3)
 
         with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
-            mock_cursor.fetchall = Mock(return_value=[mock_row_1, mock_row_2, mock_row_3])
+            mock_cursor.fetchall = Mock(
+                return_value=[mock_row_1, mock_row_2, mock_row_3]
+            )
 
             # Act
             result = adapter.read_feed_posts_by_uris(uris)
@@ -141,9 +143,7 @@ class TestSQLiteFeedPostAdapterReadFeedPostsByUris:
             # Should not call database when empty list
             mock_conn.execute.assert_not_called()
 
-    def test_returns_empty_list_when_no_posts_found(
-        self, adapter, mock_db_connection
-    ):
+    def test_returns_empty_list_when_no_posts_found(self, adapter, mock_db_connection):
         """Test that read_feed_posts_by_uris returns empty list when no posts exist."""
         # Arrange
         uris = ["nonexistent_uri1", "nonexistent_uri2"]
@@ -248,9 +248,7 @@ class TestSQLiteFeedPostAdapterReadFeedPostsByUris:
             with pytest.raises(KeyError):
                 adapter.read_feed_posts_by_uris(uris)
 
-    def test_raises_valueerror_when_null_fields(
-        self, adapter, mock_db_connection
-    ):
+    def test_raises_valueerror_when_null_fields(self, adapter, mock_db_connection):
         """Test that read_feed_posts_by_uris raises ValueError when fields are NULL."""
         # Arrange
         uris = ["uri1"]
@@ -317,4 +315,3 @@ class TestSQLiteFeedPostAdapterReadFeedPostsByUris:
             assert "WHERE uri IN" in call_args[0][0]
             # Parameters should be tuple of URIs
             assert call_args[0][1] == tuple(uris)
-
