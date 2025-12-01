@@ -1,7 +1,7 @@
 """SQLite implementation of feed post database adapter."""
 
 from db.adapters.base import FeedPostDatabaseAdapter
-from db.db import get_connection, _validate_feed_post_row
+from db.db import _validate_feed_post_row, get_connection
 from simulation.core.models.posts import BlueskyFeedPost
 
 

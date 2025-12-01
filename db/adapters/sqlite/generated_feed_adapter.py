@@ -3,7 +3,7 @@
 import json
 
 from db.adapters.base import GeneratedFeedDatabaseAdapter
-from db.db import get_connection, _validate_generated_feed_row
+from db.db import _validate_generated_feed_row, get_connection
 from simulation.core.models.feeds import GeneratedFeed
 
 
