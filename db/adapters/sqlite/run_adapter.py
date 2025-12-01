@@ -153,6 +153,9 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
 
         Writes to the `turn_metadata` table. Uses INSERT.
 
+        Args:
+            turn_metadata: TurnMetadata model to write
+
         Raises:
             sqlite3.IntegrityError: If turn_number violates constraints
             sqlite3.OperationalError: If database operation fails

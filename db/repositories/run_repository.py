@@ -62,6 +62,22 @@ class RunRepository(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to the database.
+
+        Args:
+            turn_metadata: TurnMetadata model to write
+
+        Raises:
+            ValueError: If turn_metadata is invalid
+            DuplicateTurnMetadataError: If turn metadata already exists
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+
 
 class SQLiteRunRepository(RunRepository):
     """SQLite implementation of RunRepository.
@@ -212,6 +228,26 @@ class SQLiteRunRepository(RunRepository):
             raise ValueError("turn_number cannot be negative")
 
         return self._db_adapter.read_turn_metadata(run_id, turn_number)
+
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to the database.
+
+        Args:
+            turn_metadata: TurnMetadata model to write
+
+        Raises:
+            ValueError: If turn_metadata is invalid
+            DuplicateTurnMetadataError: If turn metadata already exists
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        if not turn_metadata.run_id or not turn_metadata.run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        if turn_metadata.turn_number < 0:
+            raise ValueError("turn_number cannot be negative")
+
+        self._db_adapter.write_turn_metadata(turn_metadata)
 
 
 def create_sqlite_repository() -> SQLiteRunRepository:
