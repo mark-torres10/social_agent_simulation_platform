@@ -137,9 +137,6 @@ def initialize_database() -> None:
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_turn_metadata_run_id ON turn_metadata(run_id)
         """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_turn_metadata_turn_number ON turn_metadata(turn_number)
-        """)
 
         conn.commit()
 
