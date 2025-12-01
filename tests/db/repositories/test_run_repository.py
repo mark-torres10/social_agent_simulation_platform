@@ -1052,12 +1052,14 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         turn_number = 0
 
         expected = TurnMetadata(
+            run_id=run_id,
             turn_number=turn_number,
             total_actions={
                 TurnAction.LIKE: 5,
                 TurnAction.COMMENT: 2,
                 TurnAction.FOLLOW: 1,
             },
+            created_at="2024_01_01-12:00:00",
         )
         mock_adapter.read_turn_metadata.return_value = expected
 
@@ -1066,8 +1068,10 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
 
         # Assert
         assert result is not None
+        assert result.run_id == expected.run_id
         assert result.turn_number == expected.turn_number
         assert result.total_actions == expected.total_actions
+        assert result.created_at == expected.created_at
         mock_adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
 
     def test_returns_none_when_not_found(self):
@@ -1191,12 +1195,14 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         turn_number = 0
 
         expected = TurnMetadata(
+            run_id=run_id,
             turn_number=turn_number,
             total_actions={
                 TurnAction.LIKE: 10,
                 TurnAction.COMMENT: 5,
                 TurnAction.FOLLOW: 3,
             },
+            created_at="2024_01_01-12:00:00",
         )
         mock_adapter.read_turn_metadata.return_value = expected
 
@@ -1219,12 +1225,14 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         turn_number = 0
 
         expected = TurnMetadata(
+            run_id=run_id,
             turn_number=turn_number,
             total_actions={
                 TurnAction.LIKE: 0,
                 TurnAction.COMMENT: 0,
                 TurnAction.FOLLOW: 0,
             },
+            created_at="2024_01_01-12:00:00",
         )
         mock_adapter.read_turn_metadata.return_value = expected
 

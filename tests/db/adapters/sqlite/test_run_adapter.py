@@ -96,7 +96,9 @@ class TestSQLiteRunAdapterReadTurnMetadata:
             # Assert
             assert result is not None
             assert isinstance(result, TurnMetadata)
+            assert result.run_id == run_id
             assert result.turn_number == turn_number
+            assert result.created_at == "2024_01_01-12:00:00"
             # Adapter explicitly converts string keys to TurnAction enum keys
             assert result.total_actions[TurnAction.LIKE] == 5
             assert result.total_actions[TurnAction.COMMENT] == 2
@@ -161,6 +163,32 @@ class TestSQLiteRunAdapterReadTurnMetadata:
             ):
                 adapter.read_turn_metadata(run_id, turn_number)
 
+    def test_raises_keyerror_when_missing_created_at_column(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that read_turn_metadata raises KeyError when created_at column is missing."""
+        # Arrange
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        # Create a mock row missing the 'created_at' column
+        row_data = {
+            "run_id": run_id,
+            "turn_number": turn_number,
+            "total_actions": '{"like": 5}',
+            # Missing "created_at"
+        }
+        mock_row = create_mock_row(row_data)
+
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            mock_cursor.fetchone.return_value = mock_row
+
+            # Act & Assert
+            with pytest.raises(
+                KeyError, match="Missing required column 'created_at'"
+            ):
+                adapter.read_turn_metadata(run_id, turn_number)
+
     def test_raises_valueerror_when_null_fields(
         self, adapter, default_test_data, mock_db_connection
     ):
@@ -175,6 +203,30 @@ class TestSQLiteRunAdapterReadTurnMetadata:
             "turn_number": None,  # NULL
             "total_actions": '{"like": 5}',
             "created_at": "2024_01_01-12:00:00",
+        }
+        mock_row = create_mock_row(row_data)
+
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            mock_cursor.fetchone.return_value = mock_row
+
+            # Act & Assert
+            with pytest.raises(ValueError, match="Turn metadata has NULL fields"):
+                adapter.read_turn_metadata(run_id, turn_number)
+
+    def test_raises_valueerror_when_null_created_at(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that read_turn_metadata raises ValueError when created_at is NULL."""
+        # Arrange
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        # Create a mock row with NULL created_at
+        row_data = {
+            "run_id": run_id,
+            "turn_number": turn_number,
+            "total_actions": '{"like": 5}',
+            "created_at": None,  # NULL
         }
         mock_row = create_mock_row(row_data)
 
