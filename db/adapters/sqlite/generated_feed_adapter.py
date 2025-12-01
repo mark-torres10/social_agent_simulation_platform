@@ -112,10 +112,11 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
             if len(rows) == 0:
                 return []
 
+            # Build context string once (run_id and turn_number don't change in loop)
+            context = f"generated feed for run {run_id}, turn {turn_number}"
             feeds = []
             for row in rows:
                 # Validate required fields are not NULL
-                context = f"generated feed for run {run_id}, turn {turn_number}"
                 _validate_generated_feed_row(row, context=context)
 
                 # add validated rows to feeds list
