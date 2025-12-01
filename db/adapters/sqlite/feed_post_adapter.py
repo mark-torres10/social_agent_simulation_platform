@@ -115,19 +115,21 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
                 rows = []
             else:
                 q_marks = ",".join("?" for _ in uris)
-                rows = conn.execute(
-                    f"SELECT * FROM bluesky_feed_posts WHERE uri IN ({q_marks})",
-                    tuple(uris),
-                ).fetchall()
+                sql = f"SELECT * FROM bluesky_feed_posts WHERE uri IN ({q_marks})"
+                result_rows = conn.execute(sql, tuple(uris)).fetchall()
+                # Validate all returned rows before filtering (catches data integrity issues)
+                for row in result_rows:
+                    context = f"feed posts for uri={row.get('uri', 'unknown')}"
+                    _validate_feed_post_row(row, context=context)
+                # Re-map rows by uri and restore input order
+                row_by_uri = {row["uri"]: row for row in result_rows}
+                rows = [row_by_uri[uri] for uri in uris if uri in row_by_uri]
 
             if len(rows) == 0:
                 return []
 
             posts = []
             for row in rows:
-                # Validate required fields are not NULL
-                context = f"feed posts for uri={row['uri']}"
-                _validate_feed_post_row(row, context=context)
                 posts.append(
                     BlueskyFeedPost(
                         id=row["uri"],
