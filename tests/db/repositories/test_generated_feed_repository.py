@@ -283,3 +283,98 @@ class TestSQLiteGeneratedFeedRepositoryListAllGeneratedFeeds:
         assert result[0].feed_id == "feed_test1"
         assert result[1].feed_id == "feed_test2"
         assert result[2].feed_id == "feed_test3"
+
+
+class TestSQLiteGeneratedFeedRepositoryReadFeedsForTurn:
+    """Tests for SQLiteGeneratedFeedRepository.read_feeds_for_turn method."""
+
+    def test_reads_feeds_for_turn_when_found(self):
+        """Test that read_feeds_for_turn returns feeds when found."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        expected_feeds = [
+            GeneratedFeed(
+                feed_id="feed_test123",
+                run_id="run_123",
+                turn_number=0,
+                agent_handle="test.bsky.social",
+                post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+                created_at="2024-01-01T00:00:00Z",
+            )
+        ]
+        mock_adapter.read_feeds_for_turn.return_value = expected_feeds
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+
+        # Act
+        result = repo.read_feeds_for_turn("run_123", 0)
+
+        # Assert
+        assert result == expected_feeds
+        mock_adapter.read_feeds_for_turn.assert_called_once_with("run_123", 0)
+
+    def test_reads_feeds_for_turn_returns_empty_list_when_no_feeds(self):
+        """Test that read_feeds_for_turn returns empty list when no feeds found."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        mock_adapter.read_feeds_for_turn.return_value = []
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+
+        # Act
+        result = repo.read_feeds_for_turn("run_123", 0)
+
+        # Assert
+        assert result == []
+        mock_adapter.read_feeds_for_turn.assert_called_once_with("run_123", 0)
+
+    def test_raises_value_error_when_run_id_is_empty(self):
+        """Test that read_feeds_for_turn raises ValueError when run_id is empty."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            repo.read_feeds_for_turn("", 0)
+
+        mock_adapter.read_feeds_for_turn.assert_not_called()
+
+    def test_raises_value_error_when_run_id_is_whitespace_only(self):
+        """Test that read_feeds_for_turn raises ValueError when run_id is whitespace only."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            repo.read_feeds_for_turn("   ", 0)
+
+        mock_adapter.read_feeds_for_turn.assert_not_called()
+
+    def test_raises_value_error_when_turn_number_is_negative(self):
+        """Test that read_feeds_for_turn raises ValueError when turn_number is negative."""
+        # Arrange
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="turn_number cannot be negative"):
+            repo.read_feeds_for_turn("run_123", -1)
+
+        mock_adapter.read_feeds_for_turn.assert_not_called()
+
+    def test_propagates_adapter_exception_when_read_fails(self):
+        """Test that read_feeds_for_turn propagates adapter exceptions when database read fails."""
+        # Arrange
+        import sqlite3
+
+        mock_adapter = Mock(spec=GeneratedFeedDatabaseAdapter)
+        db_error = sqlite3.OperationalError("Database connection failed")
+        mock_adapter.read_feeds_for_turn.side_effect = db_error
+        repo = SQLiteGeneratedFeedRepository(mock_adapter)
+
+        # Act & Assert
+        with pytest.raises(sqlite3.OperationalError) as exc_info:
+            repo.read_feeds_for_turn("run_123", 0)
+
+        assert exc_info.value is db_error
+        mock_adapter.read_feeds_for_turn.assert_called_once_with("run_123", 0)
