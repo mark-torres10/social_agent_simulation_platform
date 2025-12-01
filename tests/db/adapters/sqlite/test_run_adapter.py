@@ -184,9 +184,7 @@ class TestSQLiteRunAdapterReadTurnMetadata:
             mock_cursor.fetchone.return_value = mock_row
 
             # Act & Assert
-            with pytest.raises(
-                KeyError, match="Missing required column 'created_at'"
-            ):
+            with pytest.raises(KeyError, match="Missing required column 'created_at'"):
                 adapter.read_turn_metadata(run_id, turn_number)
 
     def test_raises_valueerror_when_null_fields(

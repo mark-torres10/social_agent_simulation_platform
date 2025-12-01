@@ -114,9 +114,7 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
             # Check for NULL fields
             for col in required_cols:
                 if row[col] is None:
-                    raise ValueError(
-                        f"Turn metadata has NULL fields: {col}={row[col]}"
-                    )
+                    raise ValueError(f"Turn metadata has NULL fields: {col}={row[col]}")
 
             try:
                 total_actions_dict = json.loads(row["total_actions"])
@@ -145,8 +143,10 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                     created_at=row["created_at"],
                 )
             except Exception as e:
-                raise ValueError(f"Invalid turn metadata data: {e}. "
-                                 f"run_id={row['run_id']}, turn_number={row['turn_number']}, total_actions={total_actions}, created_at={row['created_at']}")
+                raise ValueError(
+                    f"Invalid turn metadata data: {e}. "
+                    f"run_id={row['run_id']}, turn_number={row['turn_number']}, total_actions={total_actions}, created_at={row['created_at']}"
+                )
 
     def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
         """Write turn metadata to SQLite.
@@ -160,15 +160,26 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
         """
         from db.db import get_connection
 
-        existing_turn_metadata = self.read_turn_metadata(turn_metadata.run_id, turn_metadata.turn_number)
-        
+        existing_turn_metadata = self.read_turn_metadata(
+            turn_metadata.run_id, turn_metadata.turn_number
+        )
+
         if existing_turn_metadata is not None:
-            raise DuplicateTurnMetadataError(turn_metadata.run_id, turn_metadata.turn_number)
-        
+            raise DuplicateTurnMetadataError(
+                turn_metadata.run_id, turn_metadata.turn_number
+            )
+
         with get_connection() as conn:
-            total_actions_json = json.dumps({k.value: v for k, v in turn_metadata.total_actions.items()})
+            total_actions_json = json.dumps(
+                {k.value: v for k, v in turn_metadata.total_actions.items()}
+            )
             conn.execute(
                 "INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at) VALUES (?, ?, ?, ?)",
-                (turn_metadata.run_id, turn_metadata.turn_number, total_actions_json, turn_metadata.created_at),
+                (
+                    turn_metadata.run_id,
+                    turn_metadata.turn_number,
+                    total_actions_json,
+                    turn_metadata.created_at,
+                ),
             )
             conn.commit()
