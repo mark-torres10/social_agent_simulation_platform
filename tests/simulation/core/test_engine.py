@@ -368,6 +368,16 @@ class TestSimulationEngineGetTurnData:
         mock_repos["run_repo"].get_run.assert_not_called()
         mock_repos["generated_feed_repo"].read_feeds_for_turn.assert_not_called()
 
+    def test_raises_value_error_for_whitespace_only_run_id(self, engine, mock_repos):
+        """Test that get_turn_data raises ValueError for whitespace-only run_id."""
+        # Arrange & Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            engine.get_turn_data("   ", 0)
+
+        # Verify repositories were not called
+        mock_repos["run_repo"].get_run.assert_not_called()
+        mock_repos["generated_feed_repo"].read_feeds_for_turn.assert_not_called()
+
     def test_raises_value_error_for_negative_turn_number(self, engine, mock_repos):
         """Test that get_turn_data raises ValueError for negative turn_number."""
         # Arrange & Act & Assert
