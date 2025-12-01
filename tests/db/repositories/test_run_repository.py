@@ -13,7 +13,9 @@ from db.exceptions import (
     RunStatusUpdateError,
 )
 from db.repositories.run_repository import SQLiteRunRepository
+from simulation.core.models.actions import TurnAction
 from simulation.core.models.runs import Run, RunConfig, RunStatus
+from simulation.core.models.turns import TurnMetadata
 
 
 class TestSQLiteRunRepositoryCreateRun:
@@ -1048,8 +1050,6 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
         turn_number = 0
-        from simulation.core.models.actions import TurnAction
-        from simulation.core.models.turns import TurnMetadata
 
         expected = TurnMetadata(
             turn_number=turn_number,
@@ -1150,6 +1150,21 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         with pytest.raises(ValueError, match="Invalid data from adapter"):
             repo.get_turn_metadata(run_id, turn_number)
 
+    def test_propagates_keyerror_from_adapter(self):
+        """Test that get_turn_metadata propagates KeyError raised by adapter."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+        adapter_error = KeyError("missing column")
+        mock_adapter.read_turn_metadata.side_effect = adapter_error
+
+        # Act & Assert
+        with pytest.raises(KeyError, match="missing column"):
+            repo.get_turn_metadata(run_id, turn_number)
+
     def test_calls_adapter_with_correct_parameters(self):
         """Test that get_turn_metadata calls adapter with correct parameters."""
         # Arrange
@@ -1174,8 +1189,6 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
         turn_number = 0
-        from simulation.core.models.actions import TurnAction
-        from simulation.core.models.turns import TurnMetadata
 
         expected = TurnMetadata(
             turn_number=turn_number,
@@ -1204,8 +1217,6 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
         turn_number = 0
-        from simulation.core.models.actions import TurnAction
-        from simulation.core.models.turns import TurnMetadata
 
         expected = TurnMetadata(
             turn_number=turn_number,
