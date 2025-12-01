@@ -157,7 +157,6 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
             turn_metadata: TurnMetadata model to write
 
         Raises:
-            sqlite3.IntegrityError: If turn_number violates constraints
             sqlite3.OperationalError: If database operation fails
             DuplicateTurnMetadataError: If turn metadata already exists
         """
@@ -176,13 +175,21 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
             total_actions_json = json.dumps(
                 {k.value: v for k, v in turn_metadata.total_actions.items()}
             )
-            conn.execute(
-                "INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at) VALUES (?, ?, ?, ?)",
-                (
-                    turn_metadata.run_id,
-                    turn_metadata.turn_number,
-                    total_actions_json,
-                    turn_metadata.created_at,
-                ),
-            )
-            conn.commit()
+            try:
+                conn.execute(
+                    "INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at) VALUES (?, ?, ?, ?)",
+                    (
+                        turn_metadata.run_id,
+                        turn_metadata.turn_number,
+                        total_actions_json,
+                        turn_metadata.created_at,
+                    ),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                # Defensive: handle constraint violations (bugs, edge cases, future changes)
+                # PRIMARY KEY violation indicates duplicate (run_id, turn_number)
+                raise DuplicateTurnMetadataError(
+                    turn_metadata.run_id, turn_metadata.turn_number
+                )
+            # sqlite3.OperationalError and other exceptions propagate as-is
