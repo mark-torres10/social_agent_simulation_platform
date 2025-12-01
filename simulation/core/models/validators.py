@@ -17,4 +17,3 @@ def validate_non_empty_string(v: str, field_name: str) -> str:
     if not v or not v.strip():
         raise ValueError(f"{field_name} cannot be empty")
     return v.strip()
-
