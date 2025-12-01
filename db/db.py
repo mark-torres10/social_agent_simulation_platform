@@ -114,8 +114,8 @@ def initialize_database() -> None:
 
         conn.execute("""
             CREATE TABLE IF NOT EXISTS turn_metadata (
-                run_id TEXT NOT NULL,
-                turn_number INTEGER NOT NULL,
+                run_id TEXT NOT NULL REFERENCES runs(run_id),
+                turn_number INTEGER NOT NULL CHECK (turn_number >= 0),
                 total_actions TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 PRIMARY KEY (run_id, turn_number)
