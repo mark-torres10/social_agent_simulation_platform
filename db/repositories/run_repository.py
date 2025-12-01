@@ -241,11 +241,31 @@ class SQLiteRunRepository(RunRepository):
             Exception: Database-specific exception if constraints are violated or
                       the operation fails. Implementations should document the
                       specific exception types they raise.
+
+        Adds validation for the following:
+        - run_id is not empty
+        - turn_number is non-negative
+        - run exists in the database
+        - turn_number is less than the total number of turns in the run
+
+        NOTE: our implementation assumes a setup where we first write a record
+        for the run itself, and then we write the subsequent turn records. No
+        run = no records.
         """
         if not turn_metadata.run_id or not turn_metadata.run_id.strip():
             raise ValueError("run_id cannot be empty")
         if turn_metadata.turn_number < 0:
             raise ValueError("turn_number cannot be negative")
+
+        run = self.get_run(turn_metadata.run_id)
+        if run is None:
+            raise RunNotFoundError(turn_metadata.run_id)
+
+        if turn_metadata.turn_number >= run.total_turns:
+            raise ValueError(
+                f"turn_number {turn_metadata.turn_number} is out of bounds. "
+                f"Run '{turn_metadata.run_id}' has {run.total_turns} turns (0-{run.total_turns - 1})"
+            )
 
         self._db_adapter.write_turn_metadata(turn_metadata)
 
