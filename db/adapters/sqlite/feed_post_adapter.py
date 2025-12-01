@@ -1,6 +1,7 @@
 """SQLite implementation of feed post database adapter."""
 
 from db.adapters.base import FeedPostDatabaseAdapter
+from db.db import get_connection, _validate_feed_post_row
 from simulation.core.models.posts import BlueskyFeedPost
 
 
@@ -92,3 +93,52 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
         from db.db import read_all_feed_posts
 
         return read_all_feed_posts()
+
+    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+        """Read feed posts by URIs.
+
+        Args:
+            uris: List of post URIs to look up
+
+        Returns:
+            List of BlueskyFeedPost models for the given URIs.
+        
+        Raises:
+            ValueError: If no feed posts are found for the given URIs
+            ValueError: If the feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            Exception: SQLite-specific exception if the operation fails.
+        """
+        with get_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM bluesky_feed_posts WHERE uri IN (?)", (uris,)
+            ).fetchall()
+
+            if len(rows) == 0:
+                # this isn't supposed to happen, so we want to raise an error if it does.
+                raise ValueError(f"No feed posts found for uris: {uris}")
+
+            # Validate required fields are not NULL
+            for row in rows:
+                context = f"feed posts for uri={row['uri']}"
+                _validate_feed_post_row(row, context=context)
+
+            posts = []
+            for row in rows:
+                posts.append(
+                    BlueskyFeedPost(
+                        id=row["uri"],
+                        uri=row["uri"],
+                        author_display_name=row["author_display_name"],
+                        author_handle=row["author_handle"],
+                        text=row["text"],
+                        bookmark_count=row["bookmark_count"],
+                        like_count=row["like_count"],
+                        quote_count=row["quote_count"],
+                        reply_count=row["reply_count"],
+                        repost_count=row["repost_count"],
+                        created_at=row["created_at"],
+                    )
+                )
+            
+            return posts
