@@ -1035,3 +1035,193 @@ class TestDomainExceptions:
         assert exc_info.value.run_id == run_id
         assert "Database connection lost" in str(exc_info.value.reason)
         assert exc_info.value.__cause__ is db_error
+
+
+class TestSQLiteRunRepositoryGetTurnMetadata:
+    """Tests for SQLiteRunRepository.get_turn_metadata method."""
+
+    def test_returns_turn_metadata_when_found(self):
+        """Test that get_turn_metadata returns TurnMetadata when it exists."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+        from simulation.core.models.actions import TurnAction
+        from simulation.core.models.turns import TurnMetadata
+
+        expected = TurnMetadata(
+            turn_number=turn_number,
+            total_actions={
+                TurnAction.LIKE: 5,
+                TurnAction.COMMENT: 2,
+                TurnAction.FOLLOW: 1,
+            },
+        )
+        mock_adapter.read_turn_metadata.return_value = expected
+
+        # Act
+        result = repo.get_turn_metadata(run_id, turn_number)
+
+        # Assert
+        assert result is not None
+        assert result.turn_number == expected.turn_number
+        assert result.total_actions == expected.total_actions
+        mock_adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
+
+    def test_returns_none_when_not_found(self):
+        """Test that get_turn_metadata returns None when metadata doesn't exist."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+        mock_adapter.read_turn_metadata.return_value = None
+
+        # Act
+        result = repo.get_turn_metadata(run_id, turn_number)
+
+        # Assert
+        assert result is None
+        mock_adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
+
+    def test_raises_valueerror_for_empty_run_id(self):
+        """Test that get_turn_metadata raises ValueError for empty run_id."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = ""
+        turn_number = 0
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            repo.get_turn_metadata(run_id, turn_number)
+
+        # Verify adapter was not called
+        mock_adapter.read_turn_metadata.assert_not_called()
+
+    def test_raises_valueerror_for_whitespace_only_run_id(self):
+        """Test that get_turn_metadata raises ValueError for whitespace-only run_id."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "   "
+        turn_number = 0
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="run_id cannot be empty"):
+            repo.get_turn_metadata(run_id, turn_number)
+
+        # Verify adapter was not called
+        mock_adapter.read_turn_metadata.assert_not_called()
+
+    def test_raises_valueerror_for_negative_turn_number(self):
+        """Test that get_turn_metadata raises ValueError for negative turn_number."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = -1
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="turn_number cannot be negative"):
+            repo.get_turn_metadata(run_id, turn_number)
+
+        # Verify adapter was not called
+        mock_adapter.read_turn_metadata.assert_not_called()
+
+    def test_propagates_adapter_exceptions(self):
+        """Test that get_turn_metadata propagates exceptions from adapter."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+        adapter_error = ValueError("Invalid data from adapter")
+        mock_adapter.read_turn_metadata.side_effect = adapter_error
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Invalid data from adapter"):
+            repo.get_turn_metadata(run_id, turn_number)
+
+    def test_calls_adapter_with_correct_parameters(self):
+        """Test that get_turn_metadata calls adapter with correct parameters."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 5
+        mock_adapter.read_turn_metadata.return_value = None
+
+        # Act
+        repo.get_turn_metadata(run_id, turn_number)
+
+        # Assert
+        mock_adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
+
+    def test_handles_turn_metadata_with_all_action_types(self):
+        """Test that get_turn_metadata handles all action types correctly."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+        from simulation.core.models.actions import TurnAction
+        from simulation.core.models.turns import TurnMetadata
+
+        expected = TurnMetadata(
+            turn_number=turn_number,
+            total_actions={
+                TurnAction.LIKE: 10,
+                TurnAction.COMMENT: 5,
+                TurnAction.FOLLOW: 3,
+            },
+        )
+        mock_adapter.read_turn_metadata.return_value = expected
+
+        # Act
+        result = repo.get_turn_metadata(run_id, turn_number)
+
+        # Assert
+        assert result is not None
+        assert result.total_actions[TurnAction.LIKE] == 10
+        assert result.total_actions[TurnAction.COMMENT] == 5
+        assert result.total_actions[TurnAction.FOLLOW] == 3
+
+    def test_handles_turn_metadata_with_zero_actions(self):
+        """Test that get_turn_metadata handles turn metadata with zero actions."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+        from simulation.core.models.actions import TurnAction
+        from simulation.core.models.turns import TurnMetadata
+
+        expected = TurnMetadata(
+            turn_number=turn_number,
+            total_actions={
+                TurnAction.LIKE: 0,
+                TurnAction.COMMENT: 0,
+                TurnAction.FOLLOW: 0,
+            },
+        )
+        mock_adapter.read_turn_metadata.return_value = expected
+
+        # Act
+        result = repo.get_turn_metadata(run_id, turn_number)
+
+        # Assert
+        assert result is not None
+        assert result.total_actions[TurnAction.LIKE] == 0
+        assert result.total_actions[TurnAction.COMMENT] == 0
+        assert result.total_actions[TurnAction.FOLLOW] == 0
