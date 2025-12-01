@@ -1,5 +1,3 @@
-from typing import Callable
-
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.generated_feed_repository import (
     create_sqlite_generated_feed_repository,
