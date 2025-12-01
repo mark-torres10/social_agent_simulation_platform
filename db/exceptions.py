@@ -90,3 +90,20 @@ class RunStatusUpdateError(Exception):
             message = f"Failed to update run status for '{run_id}'"
 
         super().__init__(message)
+
+
+class DuplicateTurnMetadataError(Exception):
+    """Raised when turn metadata already exists."""
+
+    def __init__(self, run_id: str, turn_number: int):
+        """Initialize DuplicateTurnMetadataError.
+
+        Args:
+            run_id: The run ID that has duplicate turn metadata
+            turn_number: The turn number that has duplicate metadata
+        """
+        self.run_id = run_id
+        self.turn_number = turn_number
+
+        message = f"Turn metadata already exists for run '{run_id}', turn {turn_number}"
+        super().__init__(message)
