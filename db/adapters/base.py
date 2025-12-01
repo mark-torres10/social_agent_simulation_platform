@@ -87,6 +87,19 @@ class RunDatabaseAdapter(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def read_turn_metadata(self, run_id: str, turn_number: int) -> Optional[TurnMetadata]:
+        """Read turn metadata for a specific run and turn.
+
+        Raises:
+            ValueError: If the turn metadata data is invalid (NULL fields, invalid status)
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+
 
 class ProfileDatabaseAdapter(ABC):
     """Abstract interface for profile database operations.

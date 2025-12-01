@@ -212,9 +212,7 @@ class SQLiteRunRepository(RunRepository):
         if turn_number < 0:
             raise ValueError("turn_number cannot be negative")
 
-        # TODO: Implement actual database query for turn metadata
-        # This will need to query turn results/metadata from the database
-        raise NotImplementedError("get_turn_metadata not yet implemented")
+        return self._db_adapter.read_turn_metadata(run_id, turn_number)
 
 
 def create_sqlite_repository() -> SQLiteRunRepository:
