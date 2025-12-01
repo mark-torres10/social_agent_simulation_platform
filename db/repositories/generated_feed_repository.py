@@ -196,6 +196,10 @@ class SQLiteGeneratedFeedRepository(GeneratedFeedRepository):
                       Implementations should document the specific exception types
                       they raise.
         """
+        if not run_id or not run_id.strip():
+            raise ValueError("run_id cannot be empty")
+        if turn_number < 0:
+            raise ValueError("turn_number cannot be negative")
         return self._db_adapter.read_feeds_for_turn(run_id, turn_number)
 
 
