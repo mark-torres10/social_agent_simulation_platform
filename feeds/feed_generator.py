@@ -11,12 +11,6 @@ from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.posts import BlueskyFeedPost
 
-_FEED_ALGORITHMS: dict[str, Callable] = {
-    "chronological": generate_chronological_feed,
-    # "rag": generate_rag_feed,  # Will be added in 1-2 weeks
-}
-
-
 def generate_feed(
     agent: SocialMediaAgent,
     candidate_posts: list[BlueskyFeedPost],
