@@ -1,6 +1,9 @@
 """SQLite implementation of generated feed database adapter."""
 
+import json
+
 from db.adapters.base import GeneratedFeedDatabaseAdapter
+from db.db import get_connection, _validate_generated_feed_row
 from simulation.core.models.feeds import GeneratedFeed
 
 
@@ -83,3 +86,50 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
         from db.db import read_post_uris_for_run
 
         return read_post_uris_for_run(agent_handle, run_id)
+
+    def read_feeds_for_turn(self, run_id: str, turn_number: int) -> list[GeneratedFeed]:
+        """Read all generated feeds for a specific run and turn.
+
+        Args:
+            run_id: The ID of the run
+            turn_number: The turn number (0-indexed)
+
+        Returns:
+            List of GeneratedFeed models for the specified run and turn.
+            Returns empty list if no feeds found.
+        
+        Raises:
+            ValueError: If the feed data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        with get_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM generated_feeds WHERE run_id = ? AND turn_number = ?",
+                (run_id, turn_number),
+            ).fetchall()
+
+            if len(rows) == 0:
+                # this isn't supposed to happen, so we want to raise an error if it does.
+                raise ValueError(
+                    f"No generated feeds found for run {run_id}, turn {turn_number}"
+                )
+
+            # Validate required fields are not NULL
+            context = f"generated feeds for run {run_id}, turn {turn_number}"
+            for row in rows:
+                _validate_generated_feed_row(row, context=context)
+
+            feeds = []
+            for row in rows:
+                feeds.append(GeneratedFeed(
+                    feed_id=row["feed_id"],
+                    run_id=row["run_id"],
+                    turn_number=row["turn_number"],
+                    agent_handle=row["agent_handle"],
+                    post_uris=json.loads(row["post_uris"]),
+                    created_at=row["created_at"],
+                ))
+            return feeds
