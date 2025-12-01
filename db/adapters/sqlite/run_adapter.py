@@ -5,6 +5,7 @@ import sqlite3
 from typing import Optional
 
 from db.adapters.base import RunDatabaseAdapter
+from db.exceptions import DuplicateTurnMetadataError
 from simulation.core.models.actions import TurnAction
 from simulation.core.models.runs import Run
 from simulation.core.models.turns import TurnMetadata
@@ -103,7 +104,7 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                 return None
 
             # Check required columns
-            required_cols = ["run_id", "turn_number", "total_actions"]
+            required_cols = ["run_id", "turn_number", "total_actions", "created_at"]
             for col in required_cols:
                 if col not in row.keys():
                     raise KeyError(
@@ -111,10 +112,11 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                     )
 
             # Check for NULL fields
-            if row["run_id"] is None or row["turn_number"] is None or row["total_actions"] is None:
-                raise ValueError(
-                    f"Turn metadata has NULL fields: run_id={row['run_id']}, turn_number={row['turn_number']}"
-                )
+            for col in required_cols:
+                if row[col] is None:
+                    raise ValueError(
+                        f"Turn metadata has NULL fields: {col}={row[col]}"
+                    )
 
             try:
                 total_actions_dict = json.loads(row["total_actions"])
@@ -159,6 +161,13 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
         from db.db import get_connection
 
         existing_turn_metadata = self.read_turn_metadata(turn_metadata.run_id, turn_metadata.turn_number)
-        # check if turn metadata already exists
-
-        write_turn_metadata(turn_metadata)
+        
+        if existing_turn_metadata is not None:
+            raise DuplicateTurnMetadataError(turn_metadata.run_id, turn_metadata.turn_number)
+        
+        with get_connection() as conn:
+            conn.execute(
+                "INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at) VALUES (?, ?, ?, ?)",
+                (turn_metadata.run_id, turn_metadata.turn_number, turn_metadata.total_actions, turn_metadata.created_at),
+            )
+            conn.commit()
