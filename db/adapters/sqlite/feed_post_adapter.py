@@ -119,7 +119,7 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
                 result_rows = conn.execute(sql, tuple(uris)).fetchall()
                 # Validate all returned rows before filtering (catches data integrity issues)
                 for row in result_rows:
-                    uri_value = row.get("uri") or "unknown"
+                    uri_value = row["uri"] if row["uri"] is not None else "unknown"
                     context = f"feed posts for uri={uri_value}"
                     _validate_feed_post_row(row, context=context)
                 # Re-map rows by uri and restore input order
