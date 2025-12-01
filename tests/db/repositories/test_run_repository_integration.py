@@ -845,7 +845,9 @@ class TestTurnMetadataIntegration:
 
         assert exc_info.value.run_id == "nonexistent_run"
 
-    def test_write_turn_metadata_raises_error_when_turn_number_out_of_bounds(self, temp_db):
+    def test_write_turn_metadata_raises_error_when_turn_number_out_of_bounds(
+        self, temp_db
+    ):
         """Test that writing turn metadata with out-of-bounds turn_number raises ValueError."""
         from lib.utils import get_current_timestamp
         from simulation.core.models.actions import TurnAction
@@ -866,4 +868,3 @@ class TestTurnMetadataIntegration:
 
         with pytest.raises(ValueError, match="turn_number 5 is out of bounds"):
             repo.write_turn_metadata(turn_metadata)
-

@@ -1258,7 +1258,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
         turn_number = 0
-        
+
         # Mock get_run to return a proper Run object
         mock_run = Run(
             run_id=run_id,
@@ -1270,7 +1270,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
             completed_at=None,
         )
         repo.get_run = Mock(return_value=mock_run)
-        
+
         turn_metadata = TurnMetadata(
             run_id=run_id,
             turn_number=turn_number,
@@ -1295,10 +1295,10 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
         mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "nonexistent_run"
-        
+
         # Mock get_run to return None (run doesn't exist)
         repo.get_run = Mock(return_value=None)
-        
+
         turn_metadata = TurnMetadata(
             run_id=run_id,
             turn_number=0,
@@ -1321,7 +1321,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
         mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
-        
+
         # Mock get_run to return a run with 5 turns (0-4)
         mock_run = Run(
             run_id=run_id,
@@ -1333,7 +1333,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
             completed_at=None,
         )
         repo.get_run = Mock(return_value=mock_run)
-        
+
         # Try to write metadata for turn 5 (out of bounds)
         turn_metadata = TurnMetadata(
             run_id=run_id,
@@ -1356,7 +1356,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
         mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
-        
+
         # Mock get_run to return a proper Run object
         mock_run = Run(
             run_id=run_id,
@@ -1368,7 +1368,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
             completed_at=None,
         )
         repo.get_run = Mock(return_value=mock_run)
-        
+
         turn_metadata = TurnMetadata(
             run_id=run_id,
             turn_number=0,
@@ -1395,7 +1395,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
         mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
-        
+
         # Mock get_run to return a proper Run object
         mock_run = Run(
             run_id=run_id,
@@ -1407,7 +1407,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
             completed_at=None,
         )
         repo.get_run = Mock(return_value=mock_run)
-        
+
         turn_metadata = TurnMetadata(
             run_id=run_id,
             turn_number=0,
@@ -1430,7 +1430,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
         mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
         repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
         run_id = "run_123"
-        
+
         # Mock get_run to return a proper Run object with enough turns
         mock_run = Run(
             run_id=run_id,
@@ -1442,7 +1442,7 @@ class TestSQLiteRunRepositoryWriteTurnMetadata:
             completed_at=None,
         )
         repo.get_run = Mock(return_value=mock_run)
-        
+
         turn_metadata = TurnMetadata(
             run_id=run_id,
             turn_number=5,
