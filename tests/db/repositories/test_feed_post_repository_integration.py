@@ -353,3 +353,119 @@ class TestSQLiteFeedPostRepositoryIntegration:
         assert retrieved is not None
         assert retrieved.text == long_text
         assert len(retrieved.text) > 2000
+
+    def test_read_feed_posts_by_uris_returns_posts_for_existing_uris(self, temp_db):
+        """Test that read_feed_posts_by_uris returns posts for existing URIs."""
+        repo = create_sqlite_feed_post_repository()
+
+        # Create multiple posts
+        posts = [
+            BlueskyFeedPost(
+                id=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
+                uri=f"at://did:plc:test{i}/app.bsky.feed.post/test{i}",
+                author_display_name=f"User {i}",
+                author_handle=f"user{i}.bsky.social",
+                text=f"Post {i} content",
+                bookmark_count=i,
+                like_count=i * 10,
+                quote_count=i * 2,
+                reply_count=i * 3,
+                repost_count=i,
+                created_at=f"2024-01-0{i}T00:00:00Z",
+            )
+            for i in range(1, 4)
+        ]
+
+        for post in posts:
+            repo.create_or_update_feed_post(post)
+
+        # Read posts by URIs
+        uris = [post.uri for post in posts]
+        retrieved_posts = repo.read_feed_posts_by_uris(uris)
+
+        # Assert
+        assert len(retrieved_posts) == 3
+        retrieved_uris = {p.uri for p in retrieved_posts}
+        assert retrieved_uris == set(uris)
+
+        # Verify all fields are correct
+        post_dict = {p.uri: p for p in retrieved_posts}
+        assert post_dict[uris[0]].text == "Post 1 content"
+        assert post_dict[uris[1]].like_count == 20
+        assert post_dict[uris[2]].reply_count == 9
+
+    def test_read_feed_posts_by_uris_returns_empty_list_when_no_uris(self, temp_db):
+        """Test that read_feed_posts_by_uris returns empty list when no URIs provided."""
+        repo = create_sqlite_feed_post_repository()
+
+        posts = repo.read_feed_posts_by_uris([])
+        assert posts == []
+        assert isinstance(posts, list)
+
+    def test_read_feed_posts_by_uris_returns_empty_list_when_no_posts_found(
+        self, temp_db
+    ):
+        """Test that read_feed_posts_by_uris returns empty list when no posts exist for URIs."""
+        repo = create_sqlite_feed_post_repository()
+
+        uris = [
+            "at://did:plc:nonexistent1/app.bsky.feed.post/test1",
+            "at://did:plc:nonexistent2/app.bsky.feed.post/test2",
+        ]
+        posts = repo.read_feed_posts_by_uris(uris)
+        assert posts == []
+        assert isinstance(posts, list)
+
+    def test_read_feed_posts_by_uris_returns_partial_results_when_some_missing(
+        self, temp_db
+    ):
+        """Test that read_feed_posts_by_uris returns partial results when some URIs don't exist."""
+        repo = create_sqlite_feed_post_repository()
+
+        # Create some posts
+        post1 = BlueskyFeedPost(
+            id="at://did:plc:test1/app.bsky.feed.post/test1",
+            uri="at://did:plc:test1/app.bsky.feed.post/test1",
+            author_display_name="User 1",
+            author_handle="user1.bsky.social",
+            text="Post 1 content",
+            bookmark_count=1,
+            like_count=10,
+            quote_count=2,
+            reply_count=3,
+            repost_count=1,
+            created_at="2024-01-01T00:00:00Z",
+        )
+        post2 = BlueskyFeedPost(
+            id="at://did:plc:test2/app.bsky.feed.post/test2",
+            uri="at://did:plc:test2/app.bsky.feed.post/test2",
+            author_display_name="User 2",
+            author_handle="user2.bsky.social",
+            text="Post 2 content",
+            bookmark_count=2,
+            like_count=20,
+            quote_count=4,
+            reply_count=6,
+            repost_count=2,
+            created_at="2024-01-02T00:00:00Z",
+        )
+
+        repo.create_or_update_feed_post(post1)
+        repo.create_or_update_feed_post(post2)
+
+        # Query with mix of existing and non-existing URIs
+        uris = [
+            "at://did:plc:test1/app.bsky.feed.post/test1",  # exists
+            "at://did:plc:nonexistent/app.bsky.feed.post/test",  # doesn't exist
+            "at://did:plc:test2/app.bsky.feed.post/test2",  # exists
+        ]
+
+        retrieved_posts = repo.read_feed_posts_by_uris(uris)
+
+        # Should return only the 2 existing posts
+        assert len(retrieved_posts) == 2
+        retrieved_uris = {p.uri for p in retrieved_posts}
+        assert retrieved_uris == {
+            "at://did:plc:test1/app.bsky.feed.post/test1",
+            "at://did:plc:test2/app.bsky.feed.post/test2",
+        }

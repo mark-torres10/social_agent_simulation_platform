@@ -1,6 +1,7 @@
 """SQLite implementation of feed post database adapter."""
 
 from db.adapters.base import FeedPostDatabaseAdapter
+from db.db import _validate_feed_post_row, get_connection
 from simulation.core.models.posts import BlueskyFeedPost
 
 
@@ -92,3 +93,58 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
         from db.db import read_all_feed_posts
 
         return read_all_feed_posts()
+
+    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+        """Read feed posts by URIs.
+
+        Args:
+            uris: List of post URIs to look up
+
+        Returns:
+            List of BlueskyFeedPost models for the given URIs.
+            Returns empty list if no URIs provided or if no posts found.
+            Missing URIs are silently skipped (only existing posts are returned).
+
+        Raises:
+            ValueError: If the feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from the database row
+            sqlite3.OperationalError: If database operation fails
+        """
+        with get_connection() as conn:
+            if not uris:
+                rows = []
+            else:
+                q_marks = ",".join("?" for _ in uris)
+                sql = f"SELECT * FROM bluesky_feed_posts WHERE uri IN ({q_marks})"
+                result_rows = conn.execute(sql, tuple(uris)).fetchall()
+                # Validate all returned rows before filtering (catches data integrity issues)
+                for row in result_rows:
+                    uri_value = row["uri"] if row["uri"] is not None else "unknown"
+                    context = f"feed posts for uri={uri_value}"
+                    _validate_feed_post_row(row, context=context)
+                # Re-map rows by uri and restore input order
+                row_by_uri = {row["uri"]: row for row in result_rows}
+                rows = [row_by_uri[uri] for uri in uris if uri in row_by_uri]
+
+            if len(rows) == 0:
+                return []
+
+            posts = []
+            for row in rows:
+                posts.append(
+                    BlueskyFeedPost(
+                        id=row["uri"],
+                        uri=row["uri"],
+                        author_display_name=row["author_display_name"],
+                        author_handle=row["author_handle"],
+                        text=row["text"],
+                        bookmark_count=row["bookmark_count"],
+                        like_count=row["like_count"],
+                        quote_count=row["quote_count"],
+                        reply_count=row["reply_count"],
+                        repost_count=row["repost_count"],
+                        created_at=row["created_at"],
+                    )
+                )
+
+            return posts

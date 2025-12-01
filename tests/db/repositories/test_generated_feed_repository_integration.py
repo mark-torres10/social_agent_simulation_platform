@@ -267,3 +267,70 @@ class TestSQLiteGeneratedFeedRepositoryIntegration:
         assert retrieved is not None
         assert retrieved.post_uris == post_uris
         assert len(retrieved.post_uris) == 10
+
+    def test_read_feeds_for_turn_returns_feeds_for_specific_turn(self, temp_db):
+        """Test that read_feeds_for_turn returns all feeds for a specific run and turn."""
+        repo = create_sqlite_generated_feed_repository()
+
+        # Create feeds for different turns
+        feed1 = GeneratedFeed(
+            feed_id="feed_turn0_agent1",
+            run_id="run_123",
+            turn_number=0,
+            agent_handle="agent1.bsky.social",
+            post_uris=["at://did:plc:test1/app.bsky.feed.post/post1"],
+            created_at="2024-01-01T00:00:00Z",
+        )
+        feed2 = GeneratedFeed(
+            feed_id="feed_turn0_agent2",
+            run_id="run_123",
+            turn_number=0,
+            agent_handle="agent2.bsky.social",
+            post_uris=["at://did:plc:test2/app.bsky.feed.post/post2"],
+            created_at="2024-01-01T00:00:01Z",
+        )
+        feed3 = GeneratedFeed(
+            feed_id="feed_turn1_agent1",
+            run_id="run_123",
+            turn_number=1,
+            agent_handle="agent1.bsky.social",
+            post_uris=["at://did:plc:test3/app.bsky.feed.post/post3"],
+            created_at="2024-01-01T00:00:02Z",
+        )
+        feed4 = GeneratedFeed(
+            feed_id="feed_different_run",
+            run_id="run_456",
+            turn_number=0,
+            agent_handle="agent1.bsky.social",
+            post_uris=["at://did:plc:test4/app.bsky.feed.post/post4"],
+            created_at="2024-01-01T00:00:03Z",
+        )
+
+        repo.create_or_update_generated_feed(feed1)
+        repo.create_or_update_generated_feed(feed2)
+        repo.create_or_update_generated_feed(feed3)
+        repo.create_or_update_generated_feed(feed4)
+
+        # Read feeds for run_123, turn 0
+        feeds = repo.read_feeds_for_turn("run_123", 0)
+
+        # Should return only feeds for run_123, turn 0
+        assert len(feeds) == 2
+        feed_dict = {f.agent_handle: f for f in feeds}
+        assert "agent1.bsky.social" in feed_dict
+        assert "agent2.bsky.social" in feed_dict
+        assert feed_dict["agent1.bsky.social"].feed_id == "feed_turn0_agent1"
+        assert feed_dict["agent2.bsky.social"].feed_id == "feed_turn0_agent2"
+
+        # Read feeds for run_123, turn 1
+        feeds_turn1 = repo.read_feeds_for_turn("run_123", 1)
+        assert len(feeds_turn1) == 1
+        assert feeds_turn1[0].feed_id == "feed_turn1_agent1"
+
+    def test_read_feeds_for_turn_returns_empty_list_when_no_feeds(self, temp_db):
+        """Test that read_feeds_for_turn returns empty list when no feeds exist for turn."""
+        repo = create_sqlite_generated_feed_repository()
+
+        feeds = repo.read_feeds_for_turn("run_999", 99)
+        assert feeds == []
+        assert isinstance(feeds, list)

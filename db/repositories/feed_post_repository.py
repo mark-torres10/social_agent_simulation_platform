@@ -71,6 +71,27 @@ class FeedPostRepository(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+        """Read feed posts by URIs.
+
+        Args:
+            uris: List of post URIs to look up
+
+        Returns:
+            List of BlueskyFeedPost models for the given URIs.
+            Returns empty list if no URIs provided or if no posts found.
+            Missing URIs are silently skipped (only existing posts are returned).
+
+        Raises:
+            ValueError: If the feed post data is invalid (NULL fields)
+            KeyError: If required columns are missing from any database row
+            Exception: Database-specific exception if the operation fails.
+                      Implementations should document the specific exception types
+                      they raise.
+        """
+        raise NotImplementedError
+
 
 class SQLiteFeedPostRepository(FeedPostRepository):
     """SQLite implementation of FeedPostRepository.
@@ -178,6 +199,21 @@ class SQLiteFeedPostRepository(FeedPostRepository):
             List of all BlueskyFeedPost models.
         """
         return self._db_adapter.read_all_feed_posts()
+
+    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+        """Read feed posts by URIs from SQLite.
+
+        Args:
+            uris: List of post URIs to look up
+
+        Returns:
+            List of BlueskyFeedPost models for the given URIs.
+            Returns empty list if no URIs provided or if no posts found.
+            Missing URIs are silently skipped (only existing posts are returned).
+        """
+        if not uris:
+            return []
+        return self._db_adapter.read_feed_posts_by_uris(uris)
 
 
 def create_sqlite_feed_post_repository() -> SQLiteFeedPostRepository:
