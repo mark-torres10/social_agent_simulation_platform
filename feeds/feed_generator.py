@@ -11,6 +11,7 @@ from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.posts import BlueskyFeedPost
 
+
 def generate_feed(
     agent: SocialMediaAgent,
     candidate_posts: list[BlueskyFeedPost],
