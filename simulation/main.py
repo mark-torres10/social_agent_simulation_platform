@@ -8,6 +8,10 @@ from db.exceptions import (
     RunNotFoundError,
     RunStatusUpdateError,
 )
+from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
+from db.repositories.generated_feed_repository import create_sqlite_generated_feed_repository
+from db.repositories.generated_feed_repository import GeneratedFeedRepository
+from db.repositories.feed_post_repository import FeedPostRepository
 from db.repositories.run_repository import RunRepository
 from feeds.feed_generator import generate_feeds
 from simulation.core.models.agents import SocialMediaAgent
@@ -16,7 +20,12 @@ from simulation.core.models.runs import Run, RunConfig, RunStatus
 
 
 def simulate_turn(
-    agents: list[SocialMediaAgent], run_id: str, turn_number: int
+    agents: list[SocialMediaAgent],
+    run_id: str,
+    turn_number: int,
+    generated_feed_repo: GeneratedFeedRepository,
+    feed_post_repo: FeedPostRepository,
+    feed_algorithm: str,
 ) -> dict:
     total_actions = {
         "likes": 0,
@@ -26,7 +35,12 @@ def simulate_turn(
 
     # generate all the feeds for the agents.
     agent_to_hydrated_feeds: dict[str, list[BlueskyFeedPost]] = generate_feeds(
-        agents=agents, run_id=run_id, turn_number=turn_number
+        agents=agents,
+        run_id=run_id,
+        turn_number=turn_number,
+        generated_feed_repo=generated_feed_repo,
+        feed_post_repo=feed_post_repo,
+        feed_algorithm=feed_algorithm,
     )
 
     # iterate through all the agents.
@@ -53,7 +67,13 @@ def simulate_turn(
     return total_actions
 
 
-def do_simulation_run(run_repo: RunRepository, config: RunConfig) -> None:
+def do_simulation_run(
+    run_repo: RunRepository,
+    config: RunConfig,
+    generated_feed_repo: GeneratedFeedRepository,
+    feed_post_repo: FeedPostRepository,
+    feed_algorithm: str,
+) -> None:
     """Execute a simulation run.
 
     Args:
@@ -70,7 +90,12 @@ def do_simulation_run(run_repo: RunRepository, config: RunConfig) -> None:
         for i in range(run.total_turns):
             print(f"Turn {i}")
             total_actions = simulate_turn(
-                agents=agents, run_id=run.run_id, turn_number=i
+                agents=agents,
+                run_id=run.run_id,
+                turn_number=i,
+                generated_feed_repo=generated_feed_repo,
+                feed_post_repo=feed_post_repo,
+                feed_algorithm=feed_algorithm,
             )
             print(f"Total actions on turn {i}: {total_actions}")
         run_repo.update_run_status(run.run_id, RunStatus.COMPLETED)
@@ -100,8 +125,19 @@ def main():
         num_turns=10,
     )
 
+    generated_feed_repo = create_sqlite_generated_feed_repository()
+    feed_post_repo = create_sqlite_feed_post_repository()
+
+    feed_algorithm = "chronological"
+
     try:
-        do_simulation_run(run_repo=run_repo, config=config)
+        do_simulation_run(
+            run_repo=run_repo,
+            config=config,
+            generated_feed_repo=generated_feed_repo,
+            feed_post_repo=feed_post_repo,
+            feed_algorithm=feed_algorithm,
+        )
     except (
         RunNotFoundError,
         InvalidTransitionError,

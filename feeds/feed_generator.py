@@ -22,12 +22,12 @@ def generate_feed(
     candidate_posts: list[BlueskyFeedPost],
     run_id: str,
     turn_number: int,
-    feed_type: str,
+    feed_algorithm: str,
 ) -> GeneratedFeed:
     """Generate a feed for an agent."""
-    if feed_type not in _FEED_ALGORITHMS:
-        raise ValueError(f"Unknown feed type: {feed_type}")
-    algorithm = _FEED_ALGORITHMS[feed_type]
+    if feed_algorithm not in _FEED_ALGORITHMS:
+        raise ValueError(f"Unknown feed algorithm: {feed_algorithm}")
+    algorithm = _FEED_ALGORITHMS[feed_algorithm]
     feed_dict = algorithm(candidate_posts=candidate_posts, agent=agent)
     return GeneratedFeed(
         feed_id=feed_dict["feed_id"],
@@ -43,7 +43,7 @@ def generate_feeds(
     agents: list[SocialMediaAgent],
     run_id: str,
     turn_number: int,
-    feed_type: str = "chronological",
+    feed_algorithm: str = "chronological",
 ) -> dict[str, list[BlueskyFeedPost]]:
     """Generate feeds for all the agents.
 
@@ -68,7 +68,7 @@ def generate_feeds(
             candidate_posts=candidate_posts,
             run_id=run_id,
             turn_number=turn_number,
-            feed_type=feed_type,
+            feed_algorithm=feed_algorithm,
         )
         generated_feed_repo.create_or_update_generated_feed(feed)
         feeds[agent.handle] = feed
