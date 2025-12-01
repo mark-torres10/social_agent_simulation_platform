@@ -99,9 +99,9 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
             Returns empty list if no feeds found.
         
         Raises:
-            ValueError: If the feed data is invalid (NULL fields)
+            ValueError: If the feed data is invalid (NULL fields, invalid JSON)
             KeyError: If required columns are missing from the database row
-            Exception: SQLite-specific exception if the operation fails.
+            sqlite3.OperationalError: If database operation fails
         """
         with get_connection() as conn:
             rows = conn.execute(
@@ -110,10 +110,7 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
             ).fetchall()
 
             if len(rows) == 0:
-                # this isn't supposed to happen, so we want to raise an error if it does.
-                raise ValueError(
-                    f"No generated feeds found for run {run_id}, turn {turn_number}"
-                )
+                return []
 
             # Validate required fields are not NULL
             context = f"generated feeds for run {run_id}, turn {turn_number}"

@@ -102,12 +102,13 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
 
         Returns:
             List of BlueskyFeedPost models for the given URIs.
+            Returns empty list if no URIs provided or if no posts found.
+            Missing URIs are silently skipped (only existing posts are returned).
         
         Raises:
-            ValueError: If no feed posts are found for the given URIs
             ValueError: If the feed post data is invalid (NULL fields)
             KeyError: If required columns are missing from the database row
-            Exception: SQLite-specific exception if the operation fails.
+            sqlite3.OperationalError: If database operation fails
         """
         with get_connection() as conn:
             if not uris:
@@ -120,8 +121,7 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
                 ).fetchall()
 
             if len(rows) == 0:
-                # this isn't supposed to happen, so we want to raise an error if it does.
-                raise ValueError(f"No feed posts found for uris: {uris}")
+                return []
 
             # Validate required fields are not NULL
             for row in rows:
