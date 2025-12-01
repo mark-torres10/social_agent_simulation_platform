@@ -202,19 +202,16 @@ class SQLiteRunRepository(RunRepository):
 
         Raises:
             ValueError: If run_id is empty or turn_number is negative
-
-        Note:
-            This is a stub implementation. The actual database query
-            will be implemented when turn metadata storage is added.
+            ValueError: If the turn metadata data is invalid
+            KeyError: If required columns are missing from the database row
+            Exception: Database-specific exceptions from the adapter
         """
         if not run_id or not run_id.strip():
             raise ValueError("run_id cannot be empty")
         if turn_number < 0:
             raise ValueError("turn_number cannot be negative")
 
-        # TODO: Implement actual database query for turn metadata
-        # This will need to query turn results/metadata from the database
-        raise NotImplementedError("get_turn_metadata not yet implemented")
+        return self._db_adapter.read_turn_metadata(run_id, turn_number)
 
 
 def create_sqlite_repository() -> SQLiteRunRepository:

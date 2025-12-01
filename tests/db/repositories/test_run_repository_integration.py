@@ -444,3 +444,208 @@ class TestNullabilityValidation:
 
         with pytest.raises(ValueError, match="status cannot be NULL"):
             _row_to_run(mock_row)  # type: ignore
+
+
+class TestTurnMetadataIntegration:
+    """Integration tests for turn metadata operations."""
+
+    def test_write_and_read_turn_metadata(self, temp_db):
+        """Test writing turn metadata and reading it back."""
+        from simulation.core.models.actions import TurnAction
+
+        # Create a run first
+        repo = create_sqlite_repository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        run = repo.create_run(config)
+
+        # Write turn metadata directly to database (simulating what will happen in PR 5)
+        import json
+
+        from db.db import get_connection
+
+        turn_number = 0
+        total_actions = {
+            TurnAction.LIKE: 5,
+            TurnAction.COMMENT: 2,
+            TurnAction.FOLLOW: 1,
+        }
+        total_actions_json = json.dumps({k.value: v for k, v in total_actions.items()})
+
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (run.run_id, turn_number, total_actions_json, "2024_01_01-12:00:00"),
+            )
+            conn.commit()
+
+        # Read it back via repository
+        result = repo.get_turn_metadata(run.run_id, turn_number)
+
+        # Assert
+        assert result is not None
+        assert result.turn_number == turn_number
+        assert result.total_actions[TurnAction.LIKE] == 5
+        assert result.total_actions[TurnAction.COMMENT] == 2
+        assert result.total_actions[TurnAction.FOLLOW] == 1
+
+    def test_read_turn_metadata_returns_none_when_not_found(self, temp_db):
+        """Test that get_turn_metadata returns None when metadata doesn't exist."""
+        repo = create_sqlite_repository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        run = repo.create_run(config)
+
+        # Try to read non-existent turn metadata
+        result = repo.get_turn_metadata(run.run_id, turn_number=999)
+
+        # Assert
+        assert result is None
+
+    def test_read_turn_metadata_with_multiple_turns(self, temp_db):
+        """Test reading turn metadata for multiple turns in the same run."""
+        from simulation.core.models.actions import TurnAction
+
+        # Create a run
+        repo = create_sqlite_repository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        run = repo.create_run(config)
+
+        # Write metadata for multiple turns
+        import json
+
+        from db.db import get_connection
+
+        with get_connection() as conn:
+            for turn_number in range(3):
+                total_actions = {
+                    TurnAction.LIKE: turn_number * 2,
+                    TurnAction.COMMENT: turn_number,
+                    TurnAction.FOLLOW: turn_number * 3,
+                }
+                total_actions_json = json.dumps(
+                    {k.value: v for k, v in total_actions.items()}
+                )
+                conn.execute(
+                    """
+                    INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        run.run_id,
+                        turn_number,
+                        total_actions_json,
+                        "2024_01_01-12:00:00",
+                    ),
+                )
+            conn.commit()
+
+        # Read each turn's metadata
+        for turn_number in range(3):
+            result = repo.get_turn_metadata(run.run_id, turn_number)
+            assert result is not None
+            assert result.turn_number == turn_number
+            assert result.total_actions[TurnAction.LIKE] == turn_number * 2
+            assert result.total_actions[TurnAction.COMMENT] == turn_number
+            assert result.total_actions[TurnAction.FOLLOW] == turn_number * 3
+
+    def test_read_turn_metadata_with_zero_actions(self, temp_db):
+        """Test reading turn metadata with all actions set to zero."""
+        from simulation.core.models.actions import TurnAction
+
+        # Create a run
+        repo = create_sqlite_repository()
+        config = RunConfig(num_agents=3, num_turns=5)
+        run = repo.create_run(config)
+
+        # Write metadata with zero actions
+        import json
+
+        from db.db import get_connection
+
+        turn_number = 0
+        total_actions = {
+            TurnAction.LIKE: 0,
+            TurnAction.COMMENT: 0,
+            TurnAction.FOLLOW: 0,
+        }
+        total_actions_json = json.dumps({k.value: v for k, v in total_actions.items()})
+
+        with get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (run.run_id, turn_number, total_actions_json, "2024_01_01-12:00:00"),
+            )
+            conn.commit()
+
+        # Read it back
+        result = repo.get_turn_metadata(run.run_id, turn_number)
+
+        # Assert
+        assert result is not None
+        assert result.total_actions[TurnAction.LIKE] == 0
+        assert result.total_actions[TurnAction.COMMENT] == 0
+        assert result.total_actions[TurnAction.FOLLOW] == 0
+
+    def test_read_turn_metadata_different_runs(self, temp_db):
+        """Test that turn metadata is correctly isolated per run."""
+        from simulation.core.models.actions import TurnAction
+
+        # Create two runs
+        repo = create_sqlite_repository()
+        run1 = repo.create_run(RunConfig(num_agents=2, num_turns=3))
+        run2 = repo.create_run(RunConfig(num_agents=2, num_turns=3))
+
+        # Write metadata for turn 0 in both runs with different values
+        import json
+
+        from db.db import get_connection
+
+        with get_connection() as conn:
+            # Run 1: turn 0 has 10 likes
+            total_actions_1 = {
+                TurnAction.LIKE: 10,
+                TurnAction.COMMENT: 0,
+                TurnAction.FOLLOW: 0,
+            }
+            total_actions_json_1 = json.dumps(
+                {k.value: v for k, v in total_actions_1.items()}
+            )
+            conn.execute(
+                """
+                INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (run1.run_id, 0, total_actions_json_1, "2024_01_01-12:00:00"),
+            )
+
+            # Run 2: turn 0 has 20 likes
+            total_actions_2 = {
+                TurnAction.LIKE: 20,
+                TurnAction.COMMENT: 0,
+                TurnAction.FOLLOW: 0,
+            }
+            total_actions_json_2 = json.dumps(
+                {k.value: v for k, v in total_actions_2.items()}
+            )
+            conn.execute(
+                """
+                INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (run2.run_id, 0, total_actions_json_2, "2024_01_01-12:00:00"),
+            )
+            conn.commit()
+
+        # Read both and verify they're different
+        result1 = repo.get_turn_metadata(run1.run_id, 0)
+        result2 = repo.get_turn_metadata(run2.run_id, 0)
+
+        assert result1 is not None
+        assert result2 is not None
+        assert result1.total_actions[TurnAction.LIKE] == 10
+        assert result2.total_actions[TurnAction.LIKE] == 20

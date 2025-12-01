@@ -112,6 +112,16 @@ def initialize_database() -> None:
             )
         """)
 
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS turn_metadata (
+                run_id TEXT NOT NULL REFERENCES runs(run_id),
+                turn_number INTEGER NOT NULL CHECK (turn_number >= 0),
+                total_actions TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (run_id, turn_number)
+            )
+        """)
+
         # Create indexes for frequently queried columns
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)
@@ -122,6 +132,10 @@ def initialize_database() -> None:
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_bluesky_feed_posts_author_handle 
             ON bluesky_feed_posts(author_handle)
+        """)
+
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_turn_metadata_run_id ON turn_metadata(run_id)
         """)
 
         conn.commit()
