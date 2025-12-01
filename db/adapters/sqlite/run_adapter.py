@@ -166,8 +166,9 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
             raise DuplicateTurnMetadataError(turn_metadata.run_id, turn_metadata.turn_number)
         
         with get_connection() as conn:
+            total_actions_json = json.dumps({k.value: v for k, v in turn_metadata.total_actions.items()})
             conn.execute(
                 "INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at) VALUES (?, ?, ?, ?)",
-                (turn_metadata.run_id, turn_metadata.turn_number, turn_metadata.total_actions, turn_metadata.created_at),
+                (turn_metadata.run_id, turn_metadata.turn_number, total_actions_json, turn_metadata.created_at),
             )
             conn.commit()
