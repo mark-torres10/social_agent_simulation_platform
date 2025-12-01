@@ -452,7 +452,6 @@ class TestTurnMetadataIntegration:
     def test_write_and_read_turn_metadata(self, temp_db):
         """Test writing turn metadata and reading it back."""
         from simulation.core.models.actions import TurnAction
-        from simulation.core.models.turns import TurnMetadata
 
         # Create a run first
         repo = create_sqlite_repository()
@@ -460,8 +459,9 @@ class TestTurnMetadataIntegration:
         run = repo.create_run(config)
 
         # Write turn metadata directly to database (simulating what will happen in PR 5)
-        from db.db import get_connection
         import json
+
+        from db.db import get_connection
 
         turn_number = 0
         total_actions = {
@@ -506,7 +506,6 @@ class TestTurnMetadataIntegration:
     def test_read_turn_metadata_with_multiple_turns(self, temp_db):
         """Test reading turn metadata for multiple turns in the same run."""
         from simulation.core.models.actions import TurnAction
-        from simulation.core.models.turns import TurnMetadata
 
         # Create a run
         repo = create_sqlite_repository()
@@ -514,8 +513,9 @@ class TestTurnMetadataIntegration:
         run = repo.create_run(config)
 
         # Write metadata for multiple turns
-        from db.db import get_connection
         import json
+
+        from db.db import get_connection
 
         with get_connection() as conn:
             for turn_number in range(3):
@@ -560,8 +560,9 @@ class TestTurnMetadataIntegration:
         run = repo.create_run(config)
 
         # Write metadata with zero actions
-        from db.db import get_connection
         import json
+
+        from db.db import get_connection
 
         turn_number = 0
         total_actions = {
@@ -600,8 +601,9 @@ class TestTurnMetadataIntegration:
         run2 = repo.create_run(RunConfig(num_agents=2, num_turns=3))
 
         # Write metadata for turn 0 in both runs with different values
-        from db.db import get_connection
         import json
+
+        from db.db import get_connection
 
         with get_connection() as conn:
             # Run 1: turn 0 has 10 likes

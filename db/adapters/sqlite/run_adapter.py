@@ -96,7 +96,7 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                     "SELECT * FROM turn_metadata WHERE run_id = ? AND turn_number = ?",
                     (run_id, turn_number),
                 ).fetchone()
-            except sqlite3.OperationalError as e:
+            except sqlite3.OperationalError:
                 raise
 
             if row is None:
