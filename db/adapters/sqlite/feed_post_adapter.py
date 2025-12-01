@@ -110,9 +110,14 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
             Exception: SQLite-specific exception if the operation fails.
         """
         with get_connection() as conn:
-            rows = conn.execute(
-                "SELECT * FROM bluesky_feed_posts WHERE uri IN (?)", (uris,)
-            ).fetchall()
+            if not uris:
+                rows = []
+            else:
+                q_marks = ",".join("?" for _ in uris)
+                rows = conn.execute(
+                    f"SELECT * FROM bluesky_feed_posts WHERE uri IN ({q_marks})",
+                    tuple(uris),
+                ).fetchall()
 
             if len(rows) == 0:
                 # this isn't supposed to happen, so we want to raise an error if it does.
