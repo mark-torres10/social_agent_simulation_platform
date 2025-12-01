@@ -123,13 +123,11 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
             if len(rows) == 0:
                 return []
 
-            # Validate required fields are not NULL
-            for row in rows:
-                context = f"feed posts for uri={row['uri']}"
-                _validate_feed_post_row(row, context=context)
-
             posts = []
             for row in rows:
+                # Validate required fields are not NULL
+                context = f"feed posts for uri={row['uri']}"
+                _validate_feed_post_row(row, context=context)
                 posts.append(
                     BlueskyFeedPost(
                         id=row["uri"],

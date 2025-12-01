@@ -112,13 +112,13 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
             if len(rows) == 0:
                 return []
 
-            # Validate required fields are not NULL
-            context = f"generated feeds for run {run_id}, turn {turn_number}"
-            for row in rows:
-                _validate_generated_feed_row(row, context=context)
-
             feeds = []
             for row in rows:
+                # Validate required fields are not NULL
+                context = f"generated feed for run {run_id}, turn {turn_number}"
+                _validate_generated_feed_row(row, context=context)
+
+                # add validated rows to feeds list
                 feeds.append(
                     GeneratedFeed(
                         feed_id=row["feed_id"],
