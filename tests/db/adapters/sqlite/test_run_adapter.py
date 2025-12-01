@@ -331,3 +331,192 @@ class TestSQLiteRunAdapterReadTurnMetadata:
                 in str(call_args[0][0])
             )
             assert call_args[0][1] == (run_id, turn_number)
+
+
+class TestSQLiteRunAdapterWriteTurnMetadata:
+    """Tests for SQLiteRunAdapter.write_turn_metadata method."""
+
+    def test_writes_turn_metadata_successfully(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that write_turn_metadata writes metadata to table successfully."""
+        # Arrange
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={
+                TurnAction.LIKE: 5,
+                TurnAction.COMMENT: 2,
+                TurnAction.FOLLOW: 1,
+            },
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Mock read_turn_metadata to return None (no duplicate)
+        adapter.read_turn_metadata = Mock(return_value=None)
+
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            # Act
+            adapter.write_turn_metadata(turn_metadata)
+
+            # Assert
+            # Verify read_turn_metadata was called to check for duplicates
+            adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
+            # Verify INSERT was executed
+            mock_conn.execute.assert_called_once()
+            call_args = mock_conn.execute.call_args
+            assert "INSERT INTO turn_metadata" in str(call_args[0][0])
+            # Verify parameters
+            params = call_args[0][1]
+            assert params[0] == run_id
+            assert params[1] == turn_number
+            assert params[2] == json.dumps(
+                {"like": 5, "comment": 2, "follow": 1}
+            )  # Enum values as strings
+            assert params[3] == "2024_01_01-12:00:00"
+            # Verify commit was called
+            mock_conn.commit.assert_called_once()
+
+    def test_raises_duplicate_turn_metadata_error_when_already_exists(
+        self, adapter, default_test_data
+    ):
+        """Test that write_turn_metadata raises DuplicateTurnMetadataError when metadata already exists."""
+        # Arrange
+        from db.exceptions import DuplicateTurnMetadataError
+
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Mock read_turn_metadata to return existing metadata (duplicate)
+        existing_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={TurnAction.LIKE: 3},
+            created_at="2024_01_01-11:00:00",
+        )
+        adapter.read_turn_metadata = Mock(return_value=existing_metadata)
+
+        # Act & Assert
+        with pytest.raises(
+            DuplicateTurnMetadataError,
+            match=f"Turn metadata already exists for run '{run_id}', turn {turn_number}",
+        ):
+            adapter.write_turn_metadata(turn_metadata)
+
+        # Verify read_turn_metadata was called
+        adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
+
+    def test_raises_operational_error_on_database_error(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that write_turn_metadata raises OperationalError on database errors."""
+        # Arrange
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Mock read_turn_metadata to return None (no duplicate)
+        adapter.read_turn_metadata = Mock(return_value=None)
+
+        db_error = sqlite3.OperationalError("Database locked")
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            mock_conn.execute.side_effect = db_error
+
+            # Act & Assert
+            with pytest.raises(sqlite3.OperationalError):
+                adapter.write_turn_metadata(turn_metadata)
+
+    def test_serializes_total_actions_to_json_correctly(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that write_turn_metadata correctly serializes total_actions to JSON."""
+        # Arrange
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={
+                TurnAction.LIKE: 10,
+                TurnAction.COMMENT: 5,
+                TurnAction.FOLLOW: 3,
+            },
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Mock read_turn_metadata to return None (no duplicate)
+        adapter.read_turn_metadata = Mock(return_value=None)
+
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            # Act
+            adapter.write_turn_metadata(turn_metadata)
+
+            # Assert
+            call_args = mock_conn.execute.call_args
+            params = call_args[0][1]
+            total_actions_json = params[2]
+            # Verify JSON serialization uses enum values as strings
+            expected_json = json.dumps({"like": 10, "comment": 5, "follow": 3})
+            assert total_actions_json == expected_json
+            # Verify it's valid JSON
+            parsed = json.loads(total_actions_json)
+            assert parsed == {"like": 10, "comment": 5, "follow": 3}
+
+    def test_calls_database_with_correct_insert_parameters(
+        self, adapter, mock_db_connection
+    ):
+        """Test that write_turn_metadata calls database with correct INSERT parameters."""
+        # Arrange
+        run_id = "run_456"
+        turn_number = 3
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={TurnAction.LIKE: 7},
+            created_at="2024_02_02-15:30:45",
+        )
+
+        # Mock read_turn_metadata to return None (no duplicate)
+        adapter.read_turn_metadata = Mock(return_value=None)
+
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            # Act
+            adapter.write_turn_metadata(turn_metadata)
+
+            # Assert
+            mock_conn.execute.assert_called_once()
+            call_args = mock_conn.execute.call_args
+            # Verify SQL statement
+            sql = str(call_args[0][0])
+            assert "INSERT INTO turn_metadata" in sql
+            assert "run_id" in sql
+            assert "turn_number" in sql
+            assert "total_actions" in sql
+            assert "created_at" in sql
+            # Verify parameters tuple
+            params = call_args[0][1]
+            assert len(params) == 4
+            assert params == (
+                run_id,
+                turn_number,
+                json.dumps({"like": 7}),
+                "2024_02_02-15:30:45",
+            )

@@ -19,6 +19,33 @@ from simulation.core.models.runs import Run, RunConfig, RunStatus
 from simulation.core.models.turns import TurnMetadata
 
 
+def make_turn_metadata(
+    run_id: str = "run_123",
+    turn_number: int = 0,
+    total_actions: dict[TurnAction, int] | None = None,
+    created_at: str = "2024_01_01-12:00:00",
+) -> TurnMetadata:
+    """Helper factory to create TurnMetadata instances for testing.
+
+    Args:
+        run_id: The run ID (default: "run_123")
+        turn_number: The turn number (default: 0)
+        total_actions: Dictionary mapping action types to counts (default: empty dict)
+        created_at: Creation timestamp (default: "2024_01_01-12:00:00")
+
+    Returns:
+        TurnMetadata instance with specified values
+    """
+    if total_actions is None:
+        total_actions = {}
+    return TurnMetadata(
+        run_id=run_id,
+        turn_number=turn_number,
+        total_actions=total_actions,
+        created_at=created_at,
+    )
+
+
 class TestSQLiteRunRepositoryCreateRun:
     """Tests for SQLiteRunRepository.create_run method."""
 
@@ -1195,7 +1222,7 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         run_id = "run_123"
         turn_number = 0
 
-        expected = TurnMetadata(
+        expected = make_turn_metadata(
             run_id=run_id,
             turn_number=turn_number,
             total_actions={
@@ -1212,6 +1239,9 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
 
         # Assert
         assert result is not None
+        assert result.run_id == run_id
+        assert result.turn_number == turn_number
+        assert result.created_at == "2024_01_01-12:00:00"
         assert result.total_actions[TurnAction.LIKE] == 10
         assert result.total_actions[TurnAction.COMMENT] == 5
         assert result.total_actions[TurnAction.FOLLOW] == 3
@@ -1225,7 +1255,7 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         run_id = "run_123"
         turn_number = 0
 
-        expected = TurnMetadata(
+        expected = make_turn_metadata(
             run_id=run_id,
             turn_number=turn_number,
             total_actions={
@@ -1242,6 +1272,9 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
 
         # Assert
         assert result is not None
+        assert result.run_id == run_id
+        assert result.turn_number == turn_number
+        assert result.created_at == "2024_01_01-12:00:00"
         assert result.total_actions[TurnAction.LIKE] == 0
         assert result.total_actions[TurnAction.COMMENT] == 0
         assert result.total_actions[TurnAction.FOLLOW] == 0
