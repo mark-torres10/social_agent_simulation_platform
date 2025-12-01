@@ -62,6 +62,22 @@ class RunRepository(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to the database.
+
+        Args:
+            turn_metadata: TurnMetadata model to write
+
+        Raises:
+            ValueError: If turn_metadata is invalid
+            DuplicateTurnMetadataError: If turn metadata already exists
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+
 
 class SQLiteRunRepository(RunRepository):
     """SQLite implementation of RunRepository.
@@ -212,6 +228,44 @@ class SQLiteRunRepository(RunRepository):
             raise ValueError("turn_number cannot be negative")
 
         return self._db_adapter.read_turn_metadata(run_id, turn_number)
+
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to the database.
+
+        Args:
+            turn_metadata: TurnMetadata model to write
+
+        Raises:
+            RunNotFoundError: If the run with the given run_id does not exist
+            ValueError: If turn_number is out of bounds for the run
+            DuplicateTurnMetadataError: If turn metadata already exists
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+
+        Note:
+            TurnMetadata Pydantic model already validates that run_id is non-empty
+            and turn_number is non-negative. This method validates:
+            - Run exists in the database
+            - turn_number is within bounds (0 to run.total_turns - 1)
+
+            Our implementation assumes a setup where we first write a record
+            for the run itself, and then we write the subsequent turn records.
+            No run = no records.
+        """
+        # Validate run exists
+        run = self.get_run(turn_metadata.run_id)
+        if run is None:
+            raise RunNotFoundError(turn_metadata.run_id)
+
+        # Validate turn_number is within bounds
+        if turn_metadata.turn_number >= run.total_turns:
+            raise ValueError(
+                f"turn_number {turn_metadata.turn_number} is out of bounds. "
+                f"Run '{turn_metadata.run_id}' has {run.total_turns} turns (0-{run.total_turns - 1})"
+            )
+
+        self._db_adapter.write_turn_metadata(turn_metadata)
 
 
 def create_sqlite_repository() -> SQLiteRunRepository:

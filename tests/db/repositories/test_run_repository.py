@@ -7,6 +7,7 @@ import pytest
 
 from db.adapters.base import RunDatabaseAdapter
 from db.exceptions import (
+    DuplicateTurnMetadataError,
     InvalidTransitionError,
     RunCreationError,
     RunNotFoundError,
@@ -16,6 +17,33 @@ from db.repositories.run_repository import SQLiteRunRepository
 from simulation.core.models.actions import TurnAction
 from simulation.core.models.runs import Run, RunConfig, RunStatus
 from simulation.core.models.turns import TurnMetadata
+
+
+def make_turn_metadata(
+    run_id: str = "run_123",
+    turn_number: int = 0,
+    total_actions: dict[TurnAction, int] | None = None,
+    created_at: str = "2024_01_01-12:00:00",
+) -> TurnMetadata:
+    """Helper factory to create TurnMetadata instances for testing.
+
+    Args:
+        run_id: The run ID (default: "run_123")
+        turn_number: The turn number (default: 0)
+        total_actions: Dictionary mapping action types to counts (default: empty dict)
+        created_at: Creation timestamp (default: "2024_01_01-12:00:00")
+
+    Returns:
+        TurnMetadata instance with specified values
+    """
+    if total_actions is None:
+        total_actions = {}
+    return TurnMetadata(
+        run_id=run_id,
+        turn_number=turn_number,
+        total_actions=total_actions,
+        created_at=created_at,
+    )
 
 
 class TestSQLiteRunRepositoryCreateRun:
@@ -1052,12 +1080,14 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         turn_number = 0
 
         expected = TurnMetadata(
+            run_id=run_id,
             turn_number=turn_number,
             total_actions={
                 TurnAction.LIKE: 5,
                 TurnAction.COMMENT: 2,
                 TurnAction.FOLLOW: 1,
             },
+            created_at="2024_01_01-12:00:00",
         )
         mock_adapter.read_turn_metadata.return_value = expected
 
@@ -1066,8 +1096,10 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
 
         # Assert
         assert result is not None
+        assert result.run_id == expected.run_id
         assert result.turn_number == expected.turn_number
         assert result.total_actions == expected.total_actions
+        assert result.created_at == expected.created_at
         mock_adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
 
     def test_returns_none_when_not_found(self):
@@ -1190,13 +1222,15 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         run_id = "run_123"
         turn_number = 0
 
-        expected = TurnMetadata(
+        expected = make_turn_metadata(
+            run_id=run_id,
             turn_number=turn_number,
             total_actions={
                 TurnAction.LIKE: 10,
                 TurnAction.COMMENT: 5,
                 TurnAction.FOLLOW: 3,
             },
+            created_at="2024_01_01-12:00:00",
         )
         mock_adapter.read_turn_metadata.return_value = expected
 
@@ -1205,6 +1239,9 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
 
         # Assert
         assert result is not None
+        assert result.run_id == run_id
+        assert result.turn_number == turn_number
+        assert result.created_at == "2024_01_01-12:00:00"
         assert result.total_actions[TurnAction.LIKE] == 10
         assert result.total_actions[TurnAction.COMMENT] == 5
         assert result.total_actions[TurnAction.FOLLOW] == 3
@@ -1218,13 +1255,15 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
         run_id = "run_123"
         turn_number = 0
 
-        expected = TurnMetadata(
+        expected = make_turn_metadata(
+            run_id=run_id,
             turn_number=turn_number,
             total_actions={
                 TurnAction.LIKE: 0,
                 TurnAction.COMMENT: 0,
                 TurnAction.FOLLOW: 0,
             },
+            created_at="2024_01_01-12:00:00",
         )
         mock_adapter.read_turn_metadata.return_value = expected
 
@@ -1233,6 +1272,227 @@ class TestSQLiteRunRepositoryGetTurnMetadata:
 
         # Assert
         assert result is not None
+        assert result.run_id == run_id
+        assert result.turn_number == turn_number
+        assert result.created_at == "2024_01_01-12:00:00"
         assert result.total_actions[TurnAction.LIKE] == 0
         assert result.total_actions[TurnAction.COMMENT] == 0
         assert result.total_actions[TurnAction.FOLLOW] == 0
+
+
+class TestSQLiteRunRepositoryWriteTurnMetadata:
+    """Tests for SQLiteRunRepository.write_turn_metadata method."""
+
+    def test_writes_turn_metadata_successfully(self):
+        """Test that write_turn_metadata delegates to adapter successfully."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+        turn_number = 0
+
+        # Mock get_run to return a proper Run object
+        mock_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=5,
+            total_agents=3,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None,
+        )
+        repo.get_run = Mock(return_value=mock_run)
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={
+                TurnAction.LIKE: 5,
+                TurnAction.COMMENT: 2,
+                TurnAction.FOLLOW: 1,
+            },
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Act
+        repo.write_turn_metadata(turn_metadata)
+
+        # Assert
+        mock_adapter.write_turn_metadata.assert_called_once_with(turn_metadata)
+
+    def test_raises_run_not_found_error_when_run_does_not_exist(self):
+        """Test that write_turn_metadata raises RunNotFoundError when run doesn't exist."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "nonexistent_run"
+
+        # Mock get_run to return None (run doesn't exist)
+        repo.get_run = Mock(return_value=None)
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=0,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Act & Assert
+        with pytest.raises(RunNotFoundError) as exc_info:
+            repo.write_turn_metadata(turn_metadata)
+
+        assert exc_info.value.run_id == run_id
+        # Verify adapter was not called
+        mock_adapter.write_turn_metadata.assert_not_called()
+
+    def test_raises_valueerror_when_turn_number_out_of_bounds(self):
+        """Test that write_turn_metadata raises ValueError when turn_number is out of bounds."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+
+        # Mock get_run to return a run with 5 turns (0-4)
+        mock_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=5,
+            total_agents=3,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None,
+        )
+        repo.get_run = Mock(return_value=mock_run)
+
+        # Try to write metadata for turn 5 (out of bounds)
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=5,  # Out of bounds (should be 0-4)
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="turn_number 5 is out of bounds"):
+            repo.write_turn_metadata(turn_metadata)
+
+        # Verify adapter was not called
+        mock_adapter.write_turn_metadata.assert_not_called()
+
+    def test_propagates_duplicate_turn_metadata_error(self):
+        """Test that write_turn_metadata propagates DuplicateTurnMetadataError from adapter."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+
+        # Mock get_run to return a proper Run object
+        mock_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=5,
+            total_agents=3,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None,
+        )
+        repo.get_run = Mock(return_value=mock_run)
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=0,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+        adapter_error = DuplicateTurnMetadataError(run_id, 0)
+        mock_adapter.write_turn_metadata.side_effect = adapter_error
+
+        # Act & Assert
+        with pytest.raises(DuplicateTurnMetadataError) as exc_info:
+            repo.write_turn_metadata(turn_metadata)
+
+        assert exc_info.value.run_id == run_id
+        assert exc_info.value.turn_number == 0
+        mock_adapter.write_turn_metadata.assert_called_once_with(turn_metadata)
+
+    def test_propagates_database_exceptions(self):
+        """Test that write_turn_metadata propagates database exceptions from adapter."""
+        # Arrange
+        import sqlite3
+
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+
+        # Mock get_run to return a proper Run object
+        mock_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=5,
+            total_agents=3,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None,
+        )
+        repo.get_run = Mock(return_value=mock_run)
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=0,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+        adapter_error = sqlite3.OperationalError("Database locked")
+        mock_adapter.write_turn_metadata.side_effect = adapter_error
+
+        # Act & Assert
+        with pytest.raises(sqlite3.OperationalError, match="Database locked"):
+            repo.write_turn_metadata(turn_metadata)
+
+        mock_adapter.write_turn_metadata.assert_called_once_with(turn_metadata)
+
+    def test_calls_adapter_with_correct_turn_metadata(self):
+        """Test that write_turn_metadata calls adapter with correct TurnMetadata object."""
+        # Arrange
+        mock_adapter = Mock(spec=RunDatabaseAdapter)
+        mock_get_timestamp = Mock(return_value="2024_01_01-12:00:00")
+        repo = SQLiteRunRepository(mock_adapter, mock_get_timestamp)
+        run_id = "run_123"
+
+        # Mock get_run to return a proper Run object with enough turns
+        mock_run = Run(
+            run_id=run_id,
+            created_at="2024_01_01-12:00:00",
+            total_turns=10,  # Enough turns to allow turn_number=5
+            total_agents=3,
+            started_at="2024_01_01-12:00:00",
+            status=RunStatus.RUNNING,
+            completed_at=None,
+        )
+        repo.get_run = Mock(return_value=mock_run)
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=5,
+            total_actions={
+                TurnAction.LIKE: 10,
+                TurnAction.COMMENT: 5,
+                TurnAction.FOLLOW: 3,
+            },
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Act
+        repo.write_turn_metadata(turn_metadata)
+
+        # Assert
+        mock_adapter.write_turn_metadata.assert_called_once_with(turn_metadata)
+        # Verify the exact object passed
+        call_args = mock_adapter.write_turn_metadata.call_args[0]
+        assert len(call_args) == 1
+        assert call_args[0] == turn_metadata

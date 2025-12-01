@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, field_validator
 
 from simulation.core.models.actions import TurnAction
+from simulation.core.models.validators import validate_non_empty_string
 
 
 class TurnResult(BaseModel):
@@ -39,8 +40,16 @@ class TurnMetadata(BaseModel):
     Contains basic information about a turn without the full data.
     """
 
+    run_id: str
     turn_number: int
     total_actions: dict[TurnAction, int]
+    created_at: str
+
+    @field_validator("run_id")
+    @classmethod
+    def validate_run_id(cls, v: str) -> str:
+        """Validate that run_id is a non-empty string."""
+        return validate_non_empty_string(v, "run_id")
 
     @field_validator("turn_number")
     @classmethod

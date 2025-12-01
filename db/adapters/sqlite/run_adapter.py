@@ -5,6 +5,7 @@ import sqlite3
 from typing import Optional
 
 from db.adapters.base import RunDatabaseAdapter
+from db.exceptions import DuplicateTurnMetadataError
 from simulation.core.models.actions import TurnAction
 from simulation.core.models.runs import Run
 from simulation.core.models.turns import TurnMetadata
@@ -103,7 +104,7 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                 return None
 
             # Check required columns
-            required_cols = ["turn_number", "total_actions"]
+            required_cols = ["run_id", "turn_number", "total_actions", "created_at"]
             for col in required_cols:
                 if col not in row.keys():
                     raise KeyError(
@@ -111,10 +112,9 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
                     )
 
             # Check for NULL fields
-            if row["turn_number"] is None or row["total_actions"] is None:
-                raise ValueError(
-                    f"Turn metadata has NULL fields: run_id={run_id}, turn_number={turn_number}"
-                )
+            for col in required_cols:
+                if row[col] is None:
+                    raise ValueError(f"Turn metadata has NULL fields: {col}={row[col]}")
 
             try:
                 total_actions_dict = json.loads(row["total_actions"])
@@ -137,7 +137,59 @@ class SQLiteRunAdapter(RunDatabaseAdapter):
 
             try:
                 return TurnMetadata(
-                    turn_number=row["turn_number"], total_actions=total_actions
+                    run_id=row["run_id"],
+                    turn_number=row["turn_number"],
+                    total_actions=total_actions,
+                    created_at=row["created_at"],
                 )
             except Exception as e:
-                raise ValueError(f"Invalid turn metadata data: {e}")
+                raise ValueError(
+                    f"Invalid turn metadata data: {e}. "
+                    f"run_id={row['run_id']}, turn_number={row['turn_number']}, total_actions={total_actions}, created_at={row['created_at']}"
+                )
+
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to SQLite.
+
+        Writes to the `turn_metadata` table. Uses INSERT.
+
+        Args:
+            turn_metadata: TurnMetadata model to write
+
+        Raises:
+            sqlite3.OperationalError: If database operation fails
+            DuplicateTurnMetadataError: If turn metadata already exists
+        """
+        from db.db import get_connection
+
+        existing_turn_metadata = self.read_turn_metadata(
+            turn_metadata.run_id, turn_metadata.turn_number
+        )
+
+        if existing_turn_metadata is not None:
+            raise DuplicateTurnMetadataError(
+                turn_metadata.run_id, turn_metadata.turn_number
+            )
+
+        with get_connection() as conn:
+            total_actions_json = json.dumps(
+                {k.value: v for k, v in turn_metadata.total_actions.items()}
+            )
+            try:
+                conn.execute(
+                    "INSERT INTO turn_metadata (run_id, turn_number, total_actions, created_at) VALUES (?, ?, ?, ?)",
+                    (
+                        turn_metadata.run_id,
+                        turn_metadata.turn_number,
+                        total_actions_json,
+                        turn_metadata.created_at,
+                    ),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError:
+                # Defensive: handle constraint violations (bugs, edge cases, future changes)
+                # PRIMARY KEY violation indicates duplicate (run_id, turn_number)
+                raise DuplicateTurnMetadataError(
+                    turn_metadata.run_id, turn_metadata.turn_number
+                )
+            # sqlite3.OperationalError and other exceptions propagate as-is

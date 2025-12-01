@@ -115,6 +115,23 @@ class RunDatabaseAdapter(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def write_turn_metadata(self, turn_metadata: TurnMetadata) -> None:
+        """Write turn metadata to the database.
+
+        Writes to the `turn_metadata` table. Uses INSERT.
+
+        Args:
+            turn_metadata: TurnMetadata model to write
+
+        Raises:
+            DuplicateTurnMetadataError: If turn metadata already exists
+            Exception: Database-specific exception if constraints are violated or
+                      the operation fails. Implementations should document the
+                      specific exception types they raise.
+        """
+        raise NotImplementedError
+
 
 class ProfileDatabaseAdapter(ABC):
     """Abstract interface for profile database operations.
