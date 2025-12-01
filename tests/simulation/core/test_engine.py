@@ -41,6 +41,101 @@ def engine(mock_repos):
     )
 
 
+@pytest.fixture
+def sample_run():
+    """Fixture providing a standard Run object for tests."""
+    return Run(
+        run_id="run_123",
+        created_at="2024_01_01-12:00:00",
+        total_turns=10,
+        total_agents=5,
+        started_at="2024_01_01-12:00:00",
+        status=RunStatus.RUNNING,
+        completed_at=None,
+    )
+
+
+@pytest.fixture
+def sample_feed1(sample_run):
+    """Fixture providing a standard GeneratedFeed for agent1."""
+    return GeneratedFeed(
+        feed_id="feed_1",
+        run_id=sample_run.run_id,
+        turn_number=0,
+        agent_handle="agent1.bsky.social",
+        post_uris=["uri1", "uri2"],
+        created_at="2024_01_01-12:00:00",
+    )
+
+
+@pytest.fixture
+def sample_feed2(sample_run):
+    """Fixture providing a standard GeneratedFeed for agent2."""
+    return GeneratedFeed(
+        feed_id="feed_2",
+        run_id=sample_run.run_id,
+        turn_number=0,
+        agent_handle="agent2.bsky.social",
+        post_uris=["uri3"],
+        created_at="2024_01_01-12:00:01",
+    )
+
+
+@pytest.fixture
+def sample_posts():
+    """Fixture providing standard BlueskyFeedPost objects for tests."""
+    return [
+        BlueskyFeedPost(
+            id="uri1",
+            uri="uri1",
+            author_display_name="Author 1",
+            author_handle="author1.bsky.social",
+            text="Post 1 text",
+            bookmark_count=0,
+            like_count=5,
+            quote_count=0,
+            reply_count=2,
+            repost_count=1,
+            created_at="2024_01_01-12:00:00",
+        ),
+        BlueskyFeedPost(
+            id="uri2",
+            uri="uri2",
+            author_display_name="Author 2",
+            author_handle="author2.bsky.social",
+            text="Post 2 text",
+            bookmark_count=1,
+            like_count=10,
+            quote_count=0,
+            reply_count=3,
+            repost_count=2,
+            created_at="2024_01_01-12:01:00",
+        ),
+        BlueskyFeedPost(
+            id="uri3",
+            uri="uri3",
+            author_display_name="Author 3",
+            author_handle="author3.bsky.social",
+            text="Post 3 text",
+            bookmark_count=0,
+            like_count=0,
+            quote_count=0,
+            reply_count=0,
+            repost_count=0,
+            created_at="2024_01_01-12:02:00",
+        ),
+    ]
+
+
+@pytest.fixture
+def default_test_params():
+    """Fixture providing default test parameters."""
+    return {
+        "run_id": "run_123",
+        "turn_number": 0,
+    }
+
+
 class TestSimulationEngineGetRun:
     """Tests for SimulationEngine.get_run method."""
 
@@ -190,90 +285,27 @@ class TestSimulationEngineListRuns:
 class TestSimulationEngineGetTurnData:
     """Tests for SimulationEngine.get_turn_data method."""
 
-    def test_returns_turn_data_with_feeds_and_posts(self, engine, mock_repos):
+    def test_returns_turn_data_with_feeds_and_posts(
+        self,
+        engine,
+        mock_repos,
+        sample_run,
+        sample_feed1,
+        sample_feed2,
+        sample_posts,
+        default_test_params,
+    ):
         """Test that get_turn_data returns TurnData with correct feeds and posts."""
         # Arrange
-        run_id = "run_123"
-        turn_number = 0
-        run = Run(
-            run_id=run_id,
-            created_at="2024_01_01-12:00:00",
-            total_turns=10,
-            total_agents=5,
-            started_at="2024_01_01-12:00:00",
-            status=RunStatus.RUNNING,
-            completed_at=None,
-        )
+        run_id = default_test_params["run_id"]
+        turn_number = default_test_params["turn_number"]
 
-        # Create feeds
-        feed1 = GeneratedFeed(
-            feed_id="feed_1",
-            run_id=run_id,
-            turn_number=turn_number,
-            agent_handle="agent1.bsky.social",
-            post_uris=["uri1", "uri2"],
-            created_at="2024_01_01-12:00:00",
-        )
-        feed2 = GeneratedFeed(
-            feed_id="feed_2",
-            run_id=run_id,
-            turn_number=turn_number,
-            agent_handle="agent2.bsky.social",
-            post_uris=["uri3"],
-            created_at="2024_01_01-12:00:01",
-        )
-
-        # Create posts
-        post1 = BlueskyFeedPost(
-            id="uri1",
-            uri="uri1",
-            author_display_name="Author 1",
-            author_handle="author1.bsky.social",
-            text="Post 1 text",
-            bookmark_count=0,
-            like_count=5,
-            quote_count=0,
-            reply_count=2,
-            repost_count=1,
-            created_at="2024_01_01-12:00:00",
-        )
-        post2 = BlueskyFeedPost(
-            id="uri2",
-            uri="uri2",
-            author_display_name="Author 2",
-            author_handle="author2.bsky.social",
-            text="Post 2 text",
-            bookmark_count=1,
-            like_count=10,
-            quote_count=0,
-            reply_count=3,
-            repost_count=2,
-            created_at="2024_01_01-12:01:00",
-        )
-        post3 = BlueskyFeedPost(
-            id="uri3",
-            uri="uri3",
-            author_display_name="Author 3",
-            author_handle="author3.bsky.social",
-            text="Post 3 text",
-            bookmark_count=0,
-            like_count=0,
-            quote_count=0,
-            reply_count=0,
-            repost_count=0,
-            created_at="2024_01_01-12:02:00",
-        )
-
-        mock_repos["run_repo"].get_run.return_value = run
+        mock_repos["run_repo"].get_run.return_value = sample_run
         mock_repos["generated_feed_repo"].read_feeds_for_turn.return_value = [
-            feed1,
-            feed2,
+            sample_feed1,
+            sample_feed2,
         ]
-        mock_repos["feed_post_repo"].read_feed_posts_by_uris.return_value = [
-            post1,
-            post2,
-            post3,
-        ]
+        mock_repos["feed_post_repo"].read_feed_posts_by_uris.return_value = sample_posts
 
         # Act
         result = engine.get_turn_data(run_id, turn_number)
@@ -303,22 +335,15 @@ class TestSimulationEngineGetTurnData:
         call_args = mock_repos["feed_post_repo"].read_feed_posts_by_uris.call_args[0][0]
         assert set(call_args) == {"uri1", "uri2", "uri3"}
 
-    def test_returns_none_when_turn_does_not_exist(self, engine, mock_repos):
+    def test_returns_none_when_turn_does_not_exist(
+        self, engine, mock_repos, sample_run, default_test_params
+    ):
         """Test that get_turn_data returns None when turn doesn't exist (no feeds)."""
         # Arrange
-        run_id = "run_123"
-        turn_number = 0
-        run = Run(
-            run_id=run_id,
-            created_at="2024_01_01-12:00:00",
-            total_turns=10,
-            total_agents=5,
-            started_at="2024_01_01-12:00:00",
-            status=RunStatus.RUNNING,
-            completed_at=None,
-        )
+        run_id = default_test_params["run_id"]
+        turn_number = default_test_params["turn_number"]
 
-        mock_repos["run_repo"].get_run.return_value = run
+        mock_repos["run_repo"].get_run.return_value = sample_run
         mock_repos["generated_feed_repo"].read_feeds_for_turn.return_value = []
 
         # Act
@@ -372,20 +397,13 @@ class TestSimulationEngineGetTurnData:
         mock_repos["generated_feed_repo"].read_feeds_for_turn.assert_not_called()
         mock_repos["feed_post_repo"].read_feed_posts_by_uris.assert_not_called()
 
-    def test_handles_missing_posts_gracefully(self, engine, mock_repos):
+    def test_handles_missing_posts_gracefully(
+        self, engine, mock_repos, sample_run, sample_posts, default_test_params
+    ):
         """Test that get_turn_data handles missing posts gracefully (skips missing, returns partial feeds)."""
         # Arrange
-        run_id = "run_123"
-        turn_number = 0
-        run = Run(
-            run_id=run_id,
-            created_at="2024_01_01-12:00:00",
-            total_turns=10,
-            total_agents=5,
-            started_at="2024_01_01-12:00:00",
-            status=RunStatus.RUNNING,
-            completed_at=None,
-        )
+        run_id = default_test_params["run_id"]
+        turn_number = default_test_params["turn_number"]
 
         feed = GeneratedFeed(
             feed_id="feed_1",
@@ -400,24 +418,12 @@ class TestSimulationEngineGetTurnData:
             created_at="2024_01_01-12:00:00",
         )
 
-        post1 = BlueskyFeedPost(
-            id="uri1",
-            uri="uri1",
-            author_display_name="Author 1",
-            author_handle="author1.bsky.social",
-            text="Post 1 text",
-            bookmark_count=0,
-            like_count=5,
-            quote_count=0,
-            reply_count=2,
-            repost_count=1,
-            created_at="2024_01_01-12:00:00",
-        )
-
-        mock_repos["run_repo"].get_run.return_value = run
-        mock_repos["generated_feed_repo"].read_feeds_for_turn.return_value = [feed]
         # Only uri1 exists, uri2 and missing_uri don't
-        mock_repos["feed_post_repo"].read_feed_posts_by_uris.return_value = [post1]
+        mock_repos["run_repo"].get_run.return_value = sample_run
+        mock_repos["generated_feed_repo"].read_feeds_for_turn.return_value = [feed]
+        mock_repos["feed_post_repo"].read_feed_posts_by_uris.return_value = [
+            sample_posts[0]
+        ]  # Only first post
 
         # Act
         result = engine.get_turn_data(run_id, turn_number)
@@ -430,20 +436,13 @@ class TestSimulationEngineGetTurnData:
         call_args = mock_repos["feed_post_repo"].read_feed_posts_by_uris.call_args[0][0]
         assert set(call_args) == {"uri1", "uri2", "missing_uri"}
 
-    def test_handles_empty_feeds_when_all_posts_missing(self, engine, mock_repos):
+    def test_handles_empty_feeds_when_all_posts_missing(
+        self, engine, mock_repos, sample_run, default_test_params
+    ):
         """Test that get_turn_data returns TurnData with empty feeds dict when all posts missing."""
         # Arrange
-        run_id = "run_123"
-        turn_number = 0
-        run = Run(
-            run_id=run_id,
-            created_at="2024_01_01-12:00:00",
-            total_turns=10,
-            total_agents=5,
-            started_at="2024_01_01-12:00:00",
-            status=RunStatus.RUNNING,
-            completed_at=None,
-        )
+        run_id = default_test_params["run_id"]
+        turn_number = default_test_params["turn_number"]
 
         feed = GeneratedFeed(
             feed_id="feed_1",
@@ -454,7 +453,7 @@ class TestSimulationEngineGetTurnData:
             created_at="2024_01_01-12:00:00",
         )
 
-        mock_repos["run_repo"].get_run.return_value = run
+        mock_repos["run_repo"].get_run.return_value = sample_run
         mock_repos["generated_feed_repo"].read_feeds_for_turn.return_value = [feed]
         # No posts found
         mock_repos["feed_post_repo"].read_feed_posts_by_uris.return_value = []
@@ -468,20 +467,13 @@ class TestSimulationEngineGetTurnData:
         assert result.feeds["agent1.bsky.social"] == []  # Empty list, not None
         # Turn exists but data is incomplete
 
-    def test_handles_multiple_feeds_with_overlapping_uris(self, engine, mock_repos):
+    def test_handles_multiple_feeds_with_overlapping_uris(
+        self, engine, mock_repos, sample_run, default_test_params
+    ):
         """Test that get_turn_data handles multiple feeds with overlapping post URIs correctly."""
         # Arrange
-        run_id = "run_123"
-        turn_number = 0
-        run = Run(
-            run_id=run_id,
-            created_at="2024_01_01-12:00:00",
-            total_turns=10,
-            total_agents=5,
-            started_at="2024_01_01-12:00:00",
-            status=RunStatus.RUNNING,
-            completed_at=None,
-        )
+        run_id = default_test_params["run_id"]
+        turn_number = default_test_params["turn_number"]
 
         # Two feeds with overlapping URIs
         feed1 = GeneratedFeed(
@@ -541,7 +533,7 @@ class TestSimulationEngineGetTurnData:
             created_at="2024_01_01-12:02:00",
         )
 
-        mock_repos["run_repo"].get_run.return_value = run
+        mock_repos["run_repo"].get_run.return_value = sample_run
         mock_repos["generated_feed_repo"].read_feeds_for_turn.return_value = [
             feed1,
             feed2,
@@ -565,23 +557,16 @@ class TestSimulationEngineGetTurnData:
         assert set(call_args) == {"uri1", "uri2", "uri3"}
         assert len(call_args) == 3  # No duplicates
 
-    def test_repository_exceptions_propagate(self, engine, mock_repos):
+    def test_repository_exceptions_propagate(
+        self, engine, mock_repos, sample_run, default_test_params
+    ):
         """Test that repository exceptions propagate without wrapping."""
         # Arrange
-        run_id = "run_123"
-        turn_number = 0
-        run = Run(
-            run_id=run_id,
-            created_at="2024_01_01-12:00:00",
-            total_turns=10,
-            total_agents=5,
-            started_at="2024_01_01-12:00:00",
-            status=RunStatus.RUNNING,
-            completed_at=None,
-        )
+        run_id = default_test_params["run_id"]
+        turn_number = default_test_params["turn_number"]
 
         original_error = RuntimeError("Database connection failed")
-        mock_repos["run_repo"].get_run.return_value = run
+        mock_repos["run_repo"].get_run.return_value = sample_run
         mock_repos[
             "generated_feed_repo"
         ].read_feeds_for_turn.side_effect = original_error
