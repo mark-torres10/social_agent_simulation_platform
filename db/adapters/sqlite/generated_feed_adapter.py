@@ -101,9 +101,7 @@ class SQLiteGeneratedFeedAdapter(GeneratedFeedDatabaseAdapter):
         Raises:
             ValueError: If the feed data is invalid (NULL fields)
             KeyError: If required columns are missing from the database row
-            Exception: Database-specific exception if the operation fails.
-                      Implementations should document the specific exception types
-                      they raise.
+            Exception: SQLite-specific exception if the operation fails.
         """
         with get_connection() as conn:
             rows = conn.execute(
