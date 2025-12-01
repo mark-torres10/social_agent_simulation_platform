@@ -2,6 +2,8 @@ from enum import Enum
 
 from pydantic import BaseModel, field_validator
 
+from simulation.core.models.validators import validate_non_empty_string
+
 
 class RunConfig(BaseModel):
     """Configuration for a simulation run."""
@@ -58,9 +60,7 @@ class Run(BaseModel):
     @classmethod
     def validate_run_id(cls, v: str) -> str:
         """Validate that run_id is a non-empty string."""
-        if not v or not v.strip():
-            raise ValueError("run_id cannot be empty")
-        return v.strip()
+        return validate_non_empty_string(v, "run_id")
 
     @field_validator("total_turns")
     @classmethod
