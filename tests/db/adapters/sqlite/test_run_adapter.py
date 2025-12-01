@@ -520,3 +520,77 @@ class TestSQLiteRunAdapterWriteTurnMetadata:
                 json.dumps({"like": 7}),
                 "2024_02_02-15:30:45",
             )
+
+    def test_converts_integrity_error_to_duplicate_turn_metadata_error(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that write_turn_metadata converts IntegrityError to DuplicateTurnMetadataError.
+
+        This handles race conditions and edge cases where the pre-check passes
+        but the INSERT fails due to a PRIMARY KEY constraint violation.
+        """
+        # Arrange
+        from db.exceptions import DuplicateTurnMetadataError
+
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+
+        # Mock read_turn_metadata to return None (pre-check passes)
+        adapter.read_turn_metadata = Mock(return_value=None)
+
+        # Simulate PRIMARY KEY constraint violation (duplicate insert)
+        integrity_error = sqlite3.IntegrityError(
+            "UNIQUE constraint failed: turn_metadata.run_id, turn_metadata.turn_number"
+        )
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            mock_conn.execute.side_effect = integrity_error
+
+            # Act & Assert
+            with pytest.raises(
+                DuplicateTurnMetadataError,
+                match=f"Turn metadata already exists for run '{run_id}', turn {turn_number}",
+            ):
+                adapter.write_turn_metadata(turn_metadata)
+
+            # Verify read_turn_metadata was called (pre-check)
+            adapter.read_turn_metadata.assert_called_once_with(run_id, turn_number)
+            # Verify INSERT was attempted
+            mock_conn.execute.assert_called_once()
+            # Verify commit was NOT called (INSERT failed)
+            mock_conn.commit.assert_not_called()
+
+    def test_does_not_commit_on_integrity_error(
+        self, adapter, default_test_data, mock_db_connection
+    ):
+        """Test that commit is not called when IntegrityError is raised."""
+        # Arrange
+        from db.exceptions import DuplicateTurnMetadataError
+
+        run_id = default_test_data["run_id"]
+        turn_number = default_test_data["turn_number"]
+
+        turn_metadata = TurnMetadata(
+            run_id=run_id,
+            turn_number=turn_number,
+            total_actions={TurnAction.LIKE: 5},
+            created_at="2024_01_01-12:00:00",
+        )
+
+        adapter.read_turn_metadata = Mock(return_value=None)
+        integrity_error = sqlite3.IntegrityError("UNIQUE constraint failed")
+        with mock_db_connection() as (mock_get_conn, mock_conn, mock_cursor):
+            mock_conn.execute.side_effect = integrity_error
+
+            # Act & Assert
+            with pytest.raises(DuplicateTurnMetadataError):
+                adapter.write_turn_metadata(turn_metadata)
+
+            # Verify commit was never called
+            mock_conn.commit.assert_not_called()
