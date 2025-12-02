@@ -1,5 +1,7 @@
 """SQLite implementation of feed post database adapter."""
 
+from typing import Iterable
+
 from db.adapters.base import FeedPostDatabaseAdapter
 from db.db import _validate_feed_post_row, get_connection
 from simulation.core.models.posts import BlueskyFeedPost
@@ -94,11 +96,11 @@ class SQLiteFeedPostAdapter(FeedPostDatabaseAdapter):
 
         return read_all_feed_posts()
 
-    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+    def read_feed_posts_by_uris(self, uris: Iterable[str]) -> list[BlueskyFeedPost]:
         """Read feed posts by URIs.
 
         Args:
-            uris: List of post URIs to look up
+            uris: Iterable of post URIs to look up
 
         Returns:
             List of BlueskyFeedPost models for the given URIs.

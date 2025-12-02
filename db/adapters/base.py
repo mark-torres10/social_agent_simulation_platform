@@ -1,7 +1,7 @@
 """Base adapter interfaces."""
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Iterable, Optional
 
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.generated.bio import GeneratedBio
@@ -283,11 +283,11 @@ class FeedPostDatabaseAdapter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+    def read_feed_posts_by_uris(self, uris: Iterable[str]) -> list[BlueskyFeedPost]:
         """Read feed posts by URIs.
 
         Args:
-            uris: List of post URIs to look up
+            uris: Iterable of post URIs to look up
 
         Returns:
             List of BlueskyFeedPost models for the given URIs.

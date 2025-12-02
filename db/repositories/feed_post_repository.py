@@ -1,6 +1,7 @@
 """Abstraction for feed post repositories."""
 
 from abc import ABC, abstractmethod
+from typing import Iterable
 
 from db.adapters.base import FeedPostDatabaseAdapter
 from simulation.core.models.posts import BlueskyFeedPost
@@ -72,11 +73,11 @@ class FeedPostRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+    def read_feed_posts_by_uris(self, uris: Iterable[str]) -> list[BlueskyFeedPost]:
         """Read feed posts by URIs.
 
         Args:
-            uris: List of post URIs to look up
+            uris: Iterable of post URIs to look up
 
         Returns:
             List of BlueskyFeedPost models for the given URIs.
@@ -200,11 +201,11 @@ class SQLiteFeedPostRepository(FeedPostRepository):
         """
         return self._db_adapter.read_all_feed_posts()
 
-    def read_feed_posts_by_uris(self, uris: list[str]) -> list[BlueskyFeedPost]:
+    def read_feed_posts_by_uris(self, uris: Iterable[str]) -> list[BlueskyFeedPost]:
         """Read feed posts by URIs from SQLite.
 
         Args:
-            uris: List of post URIs to look up
+            uris: Iterable of post URIs to look up
 
         Returns:
             List of BlueskyFeedPost models for the given URIs.
