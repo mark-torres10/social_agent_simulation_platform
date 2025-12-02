@@ -122,7 +122,7 @@ def generate_feeds(
     missing_uris_by_agent: dict[str, list[str]] = {}
     agent_to_hydrated_feeds: dict[str, list[BlueskyFeedPost]] = {}
     for agent_handle, feed in feeds.items():
-        hydrated_posts: list[BlueskyFeedPost] = []
+        feed_posts: list[BlueskyFeedPost] = []
         for post_uri in feed.post_uris:
             # Skip silently if missing. Currently OK and matches other specs
             # related to graceful handling of missing posts. Can be
@@ -131,8 +131,8 @@ def generate_feeds(
             if post_uri not in uri_to_post:
                 missing_uris_by_agent.setdefault(agent_handle, []).append(post_uri)
                 continue
-            hydrated_posts.append(uri_to_post[post_uri])
-        agent_to_hydrated_feeds[agent_handle] = hydrated_posts
+            feed_posts.append(uri_to_post[post_uri])
+        agent_to_hydrated_feeds[agent_handle] = feed_posts
 
     # Log aggregated warnings for missing posts (one per agent, not per URI)
     for agent_handle, missing_uris in missing_uris_by_agent.items():

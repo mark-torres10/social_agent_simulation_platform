@@ -1,15 +1,18 @@
 """Shared validation helpers for Pydantic models."""
 
+from typing import Any
 
-def validate_non_empty_string(v: str, field_name: str) -> str:
+
+def validate_non_empty_string(v: Any, field_name: str) -> str:
     """Validate that a string field is non-empty after stripping.
 
     This function is intended to be called from Pydantic field_validators
     after type coercion has occurred, so v should already be a str.
-    However, we include defensive None checking for robustness.
+    However, we include defensive None and type checking for robustness.
 
     Args:
-        v: The string value to validate (expected to be str after Pydantic coercion)
+        v: The value to validate (expected to be str after Pydantic coercion,
+           but defensively handles None and non-str types)
         field_name: The name of the field being validated (for error messages)
 
     Returns:
