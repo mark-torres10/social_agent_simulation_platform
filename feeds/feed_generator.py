@@ -1,9 +1,7 @@
 from typing import Callable
 
-from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
-from db.repositories.generated_feed_repository import (
-    create_sqlite_generated_feed_repository,
-)
+from db.repositories.feed_post_repository import FeedPostRepository
+from db.repositories.generated_feed_repository import GeneratedFeedRepository
 from feeds.algorithms import generate_chronological_feed
 from feeds.candidate_generation import load_candidate_posts
 from lib.utils import get_current_timestamp
@@ -43,7 +41,9 @@ def generate_feeds(
     agents: list[SocialMediaAgent],
     run_id: str,
     turn_number: int,
-    feed_algorithm: str = "chronological",
+    generated_feed_repo: GeneratedFeedRepository,
+    feed_post_repo: FeedPostRepository,
+    feed_algorithm: str,
 ) -> dict[str, list[BlueskyFeedPost]]:
     """Generate feeds for all the agents.
 
@@ -56,7 +56,6 @@ def generate_feeds(
     4. Returns a dictionary of agent handles to lists of hydrated BlueskyFeedPost models.
     """
     feeds: dict[str, GeneratedFeed] = {}
-    generated_feed_repo = create_sqlite_generated_feed_repository()
     for agent in agents:
         # TODO: right now we load all posts per agent, but obviously
         # can optimize and personalize later to save on queries.
@@ -73,28 +72,25 @@ def generate_feeds(
         generated_feed_repo.create_or_update_generated_feed(feed)
         feeds[agent.handle] = feed
 
-    # now iterate through all the feeds and hydrate the posts.
-    # PERFORMANCE NOTE: This loads ALL posts into memory, which is inefficient
-    # for large datasets. This approach is acceptable for small-scale simulations
-    # but should be optimized when the dataset grows beyond ~10K posts. Potential
-    # optimizations include:
-    # - Batch queries: Query posts by URI sets instead of loading all
-    # - Pagination: Process feeds in batches
-    # - Caching: Cache frequently accessed posts
-    # - Database indexes: Ensure proper indexes on uri column
-    # TODO: Optimize when post count exceeds 10K or performance degrades
-    feed_post_repo = create_sqlite_feed_post_repository()
-    all_posts = feed_post_repo.list_all_feed_posts()
-    uri_to_post = {p.uri: p for p in all_posts}
+    # iterate through feeds, grab only the unique URIs, and hydrate
+    all_post_uris: set[str] = set()
+    for feed in feeds.values():
+        all_post_uris.update(feed.post_uris)
+
+    hydrated_posts: list[BlueskyFeedPost] = feed_post_repo.read_feed_posts_by_uris(all_post_uris)
+    uri_to_post: dict[str, BlueskyFeedPost] = {p.uri: p for p in hydrated_posts}
+
+    # now iterate through feeds and hydrate the posts.
     agent_to_hydrated_feeds: dict[str, list[BlueskyFeedPost]] = {}
     for agent_handle, feed in feeds.items():
-        hydrated_posts = []
-        for idx, post_uri in enumerate(feed.post_uris):
-            if post_uri not in uri_to_post:
-                raise ValueError(
-                    f"Missing post URI in feed: agent_handle={agent_handle}, "
-                    f"feed_id={feed.feed_id}, post_index={idx}, missing_uri={post_uri}"
-                )
-            hydrated_posts.append(uri_to_post[post_uri])
+        hydrated_posts: list[BlueskyFeedPost] = []
+        for post_uri in feed.post_uris:
+            # Skip silently if missing. Currently OK and matches other specs
+            # related to graceful handling of missing posts. Can be
+            # revisited as a fast follow later. Curently, missing posts are an
+            # edge case.
+            if post_uri in uri_to_post:
+                hydrated_posts.append(uri_to_post[post_uri])
         agent_to_hydrated_feeds[agent_handle] = hydrated_posts
+
     return agent_to_hydrated_feeds
