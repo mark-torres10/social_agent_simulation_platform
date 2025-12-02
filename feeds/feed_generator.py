@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 from db.repositories.feed_post_repository import FeedPostRepository
@@ -9,6 +10,8 @@ from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.posts import BlueskyFeedPost
 
+
+logger = logging.getLogger(__name__)
 
 _FEED_ALGORITHMS: dict[str, Callable] = {
     "chronological": generate_chronological_feed,
@@ -89,8 +92,13 @@ def generate_feeds(
             # related to graceful handling of missing posts. Can be
             # revisited as a fast follow later. Curently, missing posts are an
             # edge case.
-            if post_uri in uri_to_post:
-                hydrated_posts.append(uri_to_post[post_uri])
+            if post_uri not in uri_to_post:
+                logger.warning(
+                    f"Missing post URI in feed: agent_handle={agent_handle}, "
+                    f"feed_id={feed.feed_id}, missing_uri={post_uri}"
+                )
+                continue
+            hydrated_posts.append(uri_to_post[post_uri])
         agent_to_hydrated_feeds[agent_handle] = hydrated_posts
 
     return agent_to_hydrated_feeds
