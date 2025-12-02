@@ -116,7 +116,9 @@ class TestGenerateFeed:
         feed_algorithm = "unknown_algorithm"
 
         # Act & Assert
-        with pytest.raises(ValueError, match="Unknown feed algorithm: unknown_algorithm"):
+        with pytest.raises(
+            ValueError, match="Unknown feed algorithm: unknown_algorithm"
+        ):
             generate_feed(
                 agent=sample_agent,
                 candidate_posts=sample_posts,
@@ -335,7 +337,9 @@ class TestGenerateFeeds:
         # Verify create_or_update_generated_feed was called
         mock_generated_feed_repo.create_or_update_generated_feed.assert_called_once()
         # Verify the feed passed to the repository has correct values
-        call_args = mock_generated_feed_repo.create_or_update_generated_feed.call_args[0][0]
+        call_args = mock_generated_feed_repo.create_or_update_generated_feed.call_args[
+            0
+        ][0]
         assert isinstance(call_args, GeneratedFeed)
         assert call_args.run_id == run_id
         assert call_args.turn_number == turn_number
@@ -374,7 +378,9 @@ class TestGenerateFeeds:
         assert isinstance(result, dict)
         assert sample_agent.handle in result
         assert isinstance(result[sample_agent.handle], list)
-        assert all(isinstance(post, BlueskyFeedPost) for post in result[sample_agent.handle])
+        assert all(
+            isinstance(post, BlueskyFeedPost) for post in result[sample_agent.handle]
+        )
         # Verify posts are hydrated (have full post objects, not just URIs)
         assert len(result[sample_agent.handle]) == len(sample_posts)
 
@@ -483,4 +489,3 @@ class TestGenerateFeeds:
         assert sample_agent.handle in result
         # Verify the feed was generated (registry worked)
         mock_generated_feed_repo.create_or_update_generated_feed.assert_called_once()
-

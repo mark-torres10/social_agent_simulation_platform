@@ -1,2 +1,1 @@
 """Tests for feeds modules."""
-

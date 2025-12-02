@@ -10,7 +10,6 @@ from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.posts import BlueskyFeedPost
 
-
 logger = logging.getLogger(__name__)
 
 # Registry for feed generation algorithms.
@@ -24,6 +23,7 @@ _FEED_ALGORITHMS: dict[str, Callable] = {
     "chronological": generate_chronological_feed,
     # "rag": generate_rag_feed,  # TODO: Add in future PR
 }
+
 
 def generate_feed(
     agent: SocialMediaAgent,
@@ -112,7 +112,9 @@ def generate_feeds(
     for feed in feeds.values():
         all_post_uris.update(feed.post_uris)
 
-    hydrated_posts: list[BlueskyFeedPost] = feed_post_repo.read_feed_posts_by_uris(all_post_uris)
+    hydrated_posts: list[BlueskyFeedPost] = feed_post_repo.read_feed_posts_by_uris(
+        all_post_uris
+    )
     uri_to_post: dict[str, BlueskyFeedPost] = {p.uri: p for p in hydrated_posts}
 
     # now iterate through feeds and hydrate the posts.
