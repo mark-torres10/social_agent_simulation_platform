@@ -1,3 +1,5 @@
+from typing import Callable
+
 from db.repositories.feed_post_repository import create_sqlite_feed_post_repository
 from db.repositories.generated_feed_repository import (
     create_sqlite_generated_feed_repository,
@@ -8,6 +10,11 @@ from lib.utils import get_current_timestamp
 from simulation.core.models.agents import SocialMediaAgent
 from simulation.core.models.feeds import GeneratedFeed
 from simulation.core.models.posts import BlueskyFeedPost
+
+_FEED_ALGORITHMS: dict[str, Callable] = {
+    "chronological": generate_chronological_feed,
+    # "rag": generate_rag_feed,  # Will be added in 1-2 weeks
+}
 
 
 def generate_feed(
