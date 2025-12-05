@@ -51,7 +51,14 @@ class SimulationEngine:
         Returns:
             The run that was executed.
         """
-        raise NotImplementedError  # Stub for PR 1
+        run: Run = create_run(run_config)
+        agents: list[SocialMediaAgent] = self._create_agents_for_run(run_config)
+
+        for turn_number in range(run.total_turns):
+            turn_result: TurnResult = self._simulate_turn(run.run_id, turn_number, agents)
+            self._write_turn_result(turn_result)
+
+        self._update_run_status_safely(run.run_id, RunStatus.COMPLETED)
 
     def get_run(self, run_id: str) -> Optional[Run]:
         """Get a run by its ID.
